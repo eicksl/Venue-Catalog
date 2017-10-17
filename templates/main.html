@@ -2,7 +2,7 @@
 <html>
 
   <head>
-    <title>Address Logger</title>
+    <title>Venue Logger</title>
     <link rel='stylesheet' type='text/css'
           href="{{url_for('static', filename='css/main.css')}}">
     <script src=
@@ -25,9 +25,13 @@
       <input type='submit' value='Search'>
     </form>
 
-    {% with msg = get_flashed_messages() %}
-      {% if msg %}
-        <p><strong> {{msg}} </strong></p>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for msg in messages %}
+          <li><strong> {{msg}} </strong></li>
+        {% endfor %}
+       </ul>
       {% endif %}
     {% endwith %}
   </body>

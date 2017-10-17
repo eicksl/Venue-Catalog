@@ -2,34 +2,57 @@
 <html>
 
   <head>
+    <title>{{query}} - {{location}}</title>
+    <link rel='stylesheet' type='text/css'
+          href="{{url_for('static', filename='css/main.css')}}">
     <script src=
     'https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'>
     </script>
-    <!--<script type='text/javascript' src='js/search.js'></script>-->
   </head>
 
   <body>
+    <a href="{{url_for('catalog')}}"> MAIN </a>
     <h1> Displaying results for {{query}} in/near {{location}} </h1>
+
     {% for venue in data %}
       {% if venue != 'LIMIT' %}
         <div class='venues'>
           <div class='images'>
-          {% if venue['image'] %}
-            <img src= {{venue['image']}}>
-          {% else %}
-            <img src= {{url_for('static', filename='img/placeholder.png')}}
-                                               alt='Placeholder Image'>
-          {% endif %}
+            {% if venue['image'] %}
+              <img src= {{venue['image']}}>
+            {% else %}
+              <img src= {{url_for('static', filename='img/placeholder.png')}}
+                                                 alt='Placeholder Image'>
+            {% endif %}
+          </div>
           <h2 class='names'> {{venue['name']}} </h2>
-          <pre class='addresses'> {{venue['address']}} </pre>
-          <pre class='phones'> {{venue['phone']}} </pre>
+          {% if venue['address'] %}
+            <pre class='addresses'> {{venue['address']}} </pre>
+          {% endif %}
+          {% if venue['phone'] %}
+            <pre class='phones'> {{venue['phone']}} </pre>
+          {% endif %}
           {% if venue['description'] %}
             <p class='description'> {{venue['description']}} </p>
           {% endif %}
           </div>
         </div>
+        <a class='save' href='#'> SAVE </a>
       {% endif %}
     {% endfor %}
+
+    <br><br><br><br><br>
+
+    {{offset}}
+    {% if offset|int != 0 %}
+      <a class='next' href="{{url_for('search', query=query, location=location,
+                offset=offset|int-10)}}"> PREVIOUS </a>
+    {% endif %}
+    {% if data[10] %}
+    <a class='next' href="{{url_for('search', query=query, location=location,
+              offset=offset|int+10)}}"> NEXT </a>
+    {% endif %}
+
   </body>
 
 </html>

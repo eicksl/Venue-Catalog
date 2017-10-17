@@ -1,3 +1,12 @@
 .hello {
   color: blue;
 }
+
+.save {
+  display: inline-block;
+  margin-bottom: 60px;
+}
+
+.images, .names, .addresses, .phones {
+  display: inline-block;
+}
