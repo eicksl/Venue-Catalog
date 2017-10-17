@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+  <head>
+    <title>Address Logger</title>
+    <link rel='stylesheet' type='text/css'
+          href="{{url_for('static', filename='css/main.css')}}">
+    <script src=
+    'https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'>
+    </script>
+  </head>
+
+  <body>
+    <p class='hello'>Hello</p>
+    {% if has_not_searched or search_failed %}
+      <form action="{{url_for('catalog')}}" method='GET'>
+    {% else %}
+      <form action="{{url_for('search', location=location, query=query)}}"
+                                                             method='GET'>
+    {% endif %}
+      <p>Location:</p>
+      <input type='text' size='30' name='location'>
+      <p>Query:</p>
+      <input type='text' size='30' name='query'>
+      <input type='submit' value='Search'>
+    </form>
+
+    {% with msg = get_flashed_messages() %}
+      {% if msg %}
+        <p><strong> {{msg}} </strong></p>
+      {% endif %}
+    {% endwith %}
+  </body>
+
+</html>

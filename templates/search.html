@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+
+  <head>
+    <script src=
+    'https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'>
+    </script>
+    <!--<script type='text/javascript' src='js/search.js'></script>-->
+  </head>
+
+  <body>
+    <h1> Displaying results for {{query}} in/near {{location}} </h1>
+    {% for venue in data %}
+      {% if venue != 'LIMIT' %}
+        <div class='venues'>
+          <div class='images'>
+          {% if venue['image'] %}
+            <img src= {{venue['image']}}>
+          {% else %}
+            <img src= {{url_for('static', filename='img/placeholder.png')}}
+                                               alt='Placeholder Image'>
+          {% endif %}
+          <h2 class='names'> {{venue['name']}} </h2>
+          <pre class='addresses'> {{venue['address']}} </pre>
+          <pre class='phones'> {{venue['phone']}} </pre>
+          {% if venue['description'] %}
+            <p class='description'> {{venue['description']}} </p>
+          {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </body>
+
+</html>
