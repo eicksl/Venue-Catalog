@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 
   <head>
@@ -48,7 +48,7 @@
       <a class='next' href="{{url_for('search', query=query, location=location,
                 offset=offset|int-10)}}"> PREVIOUS </a>
     {% endif %}
-    {% if data[10] %}
+    {% if data[LIMIT-1] %}
     <a class='next' href="{{url_for('search', query=query, location=location,
               offset=offset|int+10)}}"> NEXT </a>
     {% endif %}

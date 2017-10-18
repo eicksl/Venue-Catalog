@@ -1,8 +1,8 @@
 from flask import Flask, render_template, url_for, request, flash
 from flask import jsonify, redirect
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
-from db_setup import Base, City, Venue
+from db_setup import Base, Category, Venue
 import json, requests, httplib2, os
 
 
@@ -14,16 +14,17 @@ session = DBSession()
 
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
 CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
+LIMIT = 11
 
 
 @app.context_processor
 def override_url_for():
-    '''http://flask.pocoo.org/snippets/40'''
+    '''Cache buster; see http://flask.pocoo.org/snippets/40'''
     return dict(url_for=dated_url_for)
 
 
 def dated_url_for(endpoint, **values):
-    '''http://flask.pocoo.org/snippets/40'''
+    '''Cache buster; see http://flask.pocoo.org/snippets/40'''
     if endpoint == 'static':
         filename = values.get('filename', None)
         if filename:
@@ -51,6 +52,8 @@ def get_coordinates(location):
 
 
 def get_image(venue_api_id):
+    '''Uses the Foursquare API to retrieve an image of a venue based on the
+    venue's ID as defined in the API'''
     photo_url = ('https://api.foursquare.com/v2/'
                  'venues/{}/photos').format(venue_api_id)
     photo_params = {
@@ -65,13 +68,14 @@ def get_image(venue_api_id):
         suffix = p_data['response']['photos']['items'][0]['suffix']
         image_url = prefix + '300x300' + suffix
         return image_url
-    except KeyError:
+    except (KeyError, IndexError):
         return None
 
 
 def get_venues(query, location, offset=0):
+    '''Uses the Foursquare API to retrieve data about nearby venues based
+    on a query and location. Returns a list of dictionaries.'''
     # RESULTS NEEDED: Name, Address, Phone, Description, Photo
-    LIMIT = 11
     results = []
     coordinates = get_coordinates(location)
 
@@ -106,6 +110,7 @@ def get_venues(query, location, offset=0):
             break
         info = {}
         venue = data['response']['groups'][0]['items'][index]['venue']
+        info['category'] = venue['categories'][0]['pluralName']
         info['name'] = venue['name']
         try:
             info['phone'] = venue['contact']['formattedPhone']
@@ -150,7 +155,7 @@ def search():
         return redirect(url_for('catalog'))
 
     #return json.dumps(offset)
-    return render_template('search.html', data=data, offset=offset,
+    return render_template('search.html', data=data, offset=offset, LIMIT=LIMIT,
         location=request.args.get('location'), query=request.args.get('query'))
 
 
