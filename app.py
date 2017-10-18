@@ -131,7 +131,7 @@ def get_venues(query, location, offset=0):
         results.append(info)
 
     return results
-]
+
 
 @app.route('/', methods=['GET','POST'])
 def catalog():
