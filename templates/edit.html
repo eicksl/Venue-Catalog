@@ -1,0 +1,7 @@
+{% extends 'new.html' %}
+{% block title %} Edit Venue {% endblock %}
+{% block content %}
+  {% block value %}
+    value="venue|attr('{{index}}')"
+  {% endblock %}
+{% endblock %}

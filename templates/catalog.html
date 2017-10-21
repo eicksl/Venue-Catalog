@@ -1,0 +1,39 @@
+{% extends 'main.html' %}
+{% block title %} Venue Catalog {% endblock %}
+{% block content %}
+
+  {% if has_not_searched or search_failed %}
+    <form action="{{url_for('show_catalog')}}" method='GET'>
+  {% else %}
+    <form action="{{url_for('search', location=location, query=query)}}"
+          method='GET'>
+  {% endif %}
+      <p>Location:</p>
+      <input type='text' size='30' name='location'>
+      <p>Query:</p>
+      <input type='text' size='30' name='query'>
+      <input type='submit' value='Search'>
+  </form>
+
+  </p><a href="{{url_for('add_custom_venue')}}"> NEW </a></p>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul>
+      {% for msg in messages %}
+        <li><strong> {{msg}} </strong></li>
+      {% endfor %}
+     </ul>
+    {% endif %}
+  {% endwith %}
+
+  <br><br><br><br><br>
+
+  {% for category in categories %}
+    <a class='categories' href="{{url_for('show_venues',
+          category_key=category.key)}}">
+      <p> {{category.name}} </p>
+    </a>
+  {% endfor %}
+
+{% endblock %}

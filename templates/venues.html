@@ -1,0 +1,25 @@
+{% extends 'main.html' %}
+{% block title %} Hello {% endblock %}
+{% block content %}
+
+  {% for category in categories %}
+    <a class='categories' href="{{url_for('show_venues',
+          category_key=category.key)}}">
+      <p> {{category.name}} </p>
+    </a>
+  {% endfor %}
+
+  <br><br><br><br><br>
+
+  {% for venue in venues %}
+    <a class='venues' href="{{url_for('show_info',
+          category_key=venue.category_key, venue_key=venue.key)}}">
+      <p> {{venue.name}} </p>
+    </a>
+  {% endfor %}
+
+  <br><br><br><br><br><br>
+
+  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
+
+{% endblock %}

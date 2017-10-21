@@ -10,28 +10,35 @@ Base = declarative_base()
 class Category(Base):
     __tablename__ = 'category'
 
-    id = Column(Integer, primary_key=True)
+    key = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
+
+    @property
+    def serialize(self):
+        return {
+            'name': self.name,
+            'key': self.key
+        }
 
 
 class Venue(Base):
     __tablename__ = 'venue'
 
     name = Column(String(250), nullable=False)
-    id = Column(Integer, primary_key=True)
+    key = Column(Integer, primary_key=True)
     address = Column(String(250))
     phone = Column(String(30))
     description = Column(String(250))
     image = Column(String(250))
-    category_id = Column(Integer, ForeignKey('category.id'))
+    api_id = Column(String(30))
+    category_key = Column(Integer, ForeignKey('category.key'))
     category = relationship(Category)
-
 
     @property
     def serialize(self):
         return {
-            'id': self.id,
             'name': self.name,
+            'key': self.key,
             'address': self.address,
             'phone': self.phone,
             'description': self.description,

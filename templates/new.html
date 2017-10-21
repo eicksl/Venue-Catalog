@@ -1,0 +1,30 @@
+{% extends 'main.html' %}
+{% block title %} New Venue {% endblock %}
+{% block content %}
+
+  <form action="{{url_for('add_custom_venue', category=category, name=name,
+        address=address, phone=phone, description=description)}}" method='POST'>
+    {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
+    {% for index in info %}
+      <p> {{index}} </p>
+      <input type='text' size='30' name='{{index}}'
+            {% block value %}{% endblock %}>
+    {% endfor %}
+    <input type='submit' value='Submit'>
+  </form>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul>
+      {% for msg in messages %}
+        <li><strong> {{msg}} </strong></li>
+      {% endfor %}
+     </ul>
+    {% endif %}
+  {% endwith %}
+
+  <br><br><br><br><br><br>
+
+  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'main.html' %}
+{% block title %} Delete Venue {% endblock %}
+{% block content %}
+
+  <p>Proceed?</p>
+  <form action='#' method='POST'>
+    <button type='submit'> YES </button>
+  </form>
+
+  <br><br>
+
+  <form action="{{url_for('show_info', category_key=venue.category_key,
+        venue_key=venue.key)}}" method='GET'>
+    <button type='submit'> CANCEL </button>
+  </form>
+
+  <br><br><br><br><br><br>
+
+  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
+
+{% endblock %}

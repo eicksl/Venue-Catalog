@@ -1,6 +1,6 @@
 from flask import Flask, render_template, url_for, request, flash
 from flask import jsonify, redirect
-from sqlalchemy import create_engine, asc
+from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
 from db_setup import Base, Category, Venue
 import json, requests, httplib2, os
@@ -75,7 +75,6 @@ def get_image(venue_api_id):
 def get_venues(query, location, offset=0):
     '''Uses the Foursquare API to retrieve data about nearby venues based
     on a query and location. Returns a list of dictionaries.'''
-    # RESULTS NEEDED: Name, Address, Phone, Description, Photo
     results = []
     coordinates = get_coordinates(location)
 
@@ -110,6 +109,7 @@ def get_venues(query, location, offset=0):
             break
         info = {}
         venue = data['response']['groups'][0]['items'][index]['venue']
+        info['api_id'] = venue['id']
         info['category'] = venue['categories'][0]['pluralName']
         info['name'] = venue['name']
         try:
@@ -128,18 +128,132 @@ def get_venues(query, location, offset=0):
             pass
         info['image'] = get_image(venue['id'])
 
+        q = session.query(Venue.api_id).filter_by(
+                    api_id=info['api_id']).scalar()
+        if q is None:
+            info['in_db'] = False
+        else:
+            info['in_db'] = True
+
         results.append(info)
 
     return results
 
 
+@app.route('/add', methods=['POST'])
+def add_venue():
+    venue = json.loads(request.form['venue'])
+
+    q = session.query(Category.name).filter_by(name=venue['category']).scalar()
+    if q is None:
+        new_category = Category(name=venue['category'])
+        session.add(new_category)
+
+    q = session.query(Category.key).filter_by(name=venue['category']).scalar()
+    del venue['in_db'], venue['category']
+    new_venue = Venue(category_key=q, **venue)
+    session.add(new_venue)
+    session.commit()
+
+    flash('New venue {} added in category {}'.format(
+          venue['name'], venue['category']))
+    return redirect(url_for('show_catalog'))
+
+
+@app.route('/new', methods=['GET','POST'])
+def add_custom_venue():
+    if request.method == 'GET':
+        return render_template('new.html')
+
+    if not request.form['category'] or not request.form['name']:
+        flash('Category and Name fields are required.')
+        return redirect(url_for('add_custom_venue'))
+
+    category = ' '.join(request.form['category'].title().split())
+    if session.query(Category.name).filter_by(name=category).scalar() is None:
+        new_category = Category(name=category)
+        session.add(new_category)
+
+    name = ' '.join(request.form['name'].title().split())
+    q = session.query(Category.key).filter_by(name=category).scalar()
+    new_venue = Venue(category_key=q, name=name, phone=request.form['phone'],
+                address=request.form['address'],
+                description=request.form['description'])
+    session.add(new_venue)
+    session.commit()
+
+    flash('New venue {} added in category {}'.format(new_venue.name, category))
+    return redirect(url_for('show_catalog'))
+
+
+@app.route('/category/<int:category_key>/venue/<int:venue_key>/edit',
+            methods=['GET','POST'])
+def edit_venue(category_key, venue_key):
+    if request.method == 'GET':
+        return render_template('edit.html')
+
+    if not request.form['category'] or not request.form['name']:
+        flash('Category and Name fields are required.')
+        return redirect(url_for('edit_venue'))
+
+    new_category_str = ' '.join(request.form['category'].title().split())
+    new_name_str = ' '.join(request.form['name'].title().split())
+    old_category_str = session.query(Category).filter_by(
+                       key=category_key).one().name
+    venue = session.query(Venue).filter_by(key=venue_key).one()
+
+    # Delete and replace the category object if the category was edited AND
+    # the venue we are editing is the only one in the category
+    if (new_category_str != old_category_str
+    and session.query(Venue).filter_by(category_key=category_key).count() == 1):
+        old_category_obj = session.query(Category).filter_by(
+                           key=category_key).one()
+        session.delete(old_category_obj)
+        new_category_obj = Category(name=new_category_str)
+        session.add(new_category_obj)
+        venue.category_key = new_category_obj.key
+
+    venue.name = new_name_str
+    venue.address = request.form['address']
+    venue.phone = request.form['phone']
+    venue.description = request.form['description']
+    session.add(venue)
+    session.commit()
+
+    flash('Venue successfully edited')
+    return redirect(url_for('show_catalog'))
+
+
+@app.route('/category/<int:category_key>/venue/<int:venue_key>/delete',
+            methods=['GET','POST'])
+def delete_venue(category_key, venue_key):
+    venue = session.query(Venue).filter_by(key=venue_key).one()
+
+    if request.method == 'GET':
+        return render_template('delete.html', venue=venue)
+
+    if session.query(Venue).filter_by(category_key=category_key).count() == 1:
+        old_category_obj = session.query(Category).filter_by(
+                           key=category_key).one()
+        session.delete(old_category_obj)
+
+    session.delete(venue)
+    session.commit()
+
+    flash('Venue successfully deleted')
+    return redirect(url_for('show_catalog'))
+
+
 @app.route('/', methods=['GET','POST'])
-def catalog():
+def show_catalog():
     if request.method == 'POST':
         return redirect(url_for('search'), query=request.form['query'],
                location=request.form['location'])
-    else:
-        return render_template('main.html')
+
+    categories = session.query(Category).order_by(asc(Category.name))
+    venues = session.query(Venue).order_by(asc(Venue.name))
+
+    return render_template('catalog.html', categories=categories, venues=venues)
 
 
 @app.route('/search')
@@ -152,11 +266,24 @@ def search():
     data = get_venues(request.args.get('query'), request.args.get('location'),
            offset)
     if data is None:
-        return redirect(url_for('catalog'))
+        return redirect(url_for('show_catalog'))
 
-    #return json.dumps(offset)
     return render_template('search.html', data=data, offset=offset, LIMIT=LIMIT,
         location=request.args.get('location'), query=request.args.get('query'))
+
+
+@app.route('/category/<int:category_key>')
+def show_venues(category_key):
+    categories = session.query(Category).order_by(asc(Category.name))
+    venues = session.query(Venue).filter_by(category_key=category_key).order_by(
+             asc(Venue.name))
+    return render_template('venues.html', categories=categories, venues=venues)
+
+
+@app.route('/category/<int:category_key>/venue/<int:venue_key>')
+def show_info(category_key, venue_key):
+    venue = session.query(Venue).filter_by(key=venue_key).one()
+    return render_template('info.html', venue=venue)
 
 
 if __name__ == '__main__':
