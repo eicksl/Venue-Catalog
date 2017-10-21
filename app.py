@@ -7,6 +7,7 @@ import json, requests, httplib2, os
 
 
 app = Flask(__name__)
+#app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 engine = create_engine('sqlite:///venue.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -189,8 +190,13 @@ def add_custom_venue():
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/edit',
             methods=['GET','POST'])
 def edit_venue(category_key, venue_key):
+    venue = session.query(Venue).filter_by(key=venue_key).one()
+    old_category_str = session.query(Category).filter_by(
+                       key=category_key).one().name
+
     if request.method == 'GET':
-        return render_template('edit.html')
+        return render_template('edit.html', venue=venue,
+               category_name=old_category_str)
 
     if not request.form['category'] or not request.form['name']:
         flash('Category and Name fields are required.')
@@ -198,9 +204,6 @@ def edit_venue(category_key, venue_key):
 
     new_category_str = ' '.join(request.form['category'].title().split())
     new_name_str = ' '.join(request.form['name'].title().split())
-    old_category_str = session.query(Category).filter_by(
-                       key=category_key).one().name
-    venue = session.query(Venue).filter_by(key=venue_key).one()
 
     # Delete and replace the category object if the category was edited AND
     # the venue we are editing is the only one in the category

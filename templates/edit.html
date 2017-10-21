@@ -1,7 +1,11 @@
 {% extends 'new.html' %}
 {% block title %} Edit Venue {% endblock %}
-{% block content %}
-  {% block value %}
-    value="venue|attr('{{index}}')"
-  {% endblock %}
+{% block value %}
+
+  {% if index == 'category' %}
+    value='{{category_name}}'
+  {% else %}
+    value='{{venue[index]}}'
+  {% endif %}
+
 {% endblock %}

@@ -2,13 +2,12 @@
 {% block title %} New Venue {% endblock %}
 {% block content %}
 
-  <form action="{{url_for('add_custom_venue', category=category, name=name,
-        address=address, phone=phone, description=description)}}" method='POST'>
+  <form action='#' method='POST'>
     {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
     {% for index in info %}
       <p> {{index}} </p>
       <input type='text' size='30' name='{{index}}'
-            {% block value %}{% endblock %}>
+            {% block value scoped %}{% endblock %}>
     {% endfor %}
     <input type='submit' value='Submit'>
   </form>
