@@ -1,0 +1,11 @@
+{% macro display_flash() %}
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul>
+      {% for msg in messages %}
+        <li><strong> {{msg}} </strong></li>
+      {% endfor %}
+     </ul>
+    {% endif %}
+  {% endwith %}
+{% endmacro %}

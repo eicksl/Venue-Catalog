@@ -1,21 +1,24 @@
-from flask import Flask, render_template, url_for, request, flash
-from flask import jsonify, redirect
+from flask import Flask, render_template, url_for, flash
+from flask import request, make_response, redirect, jsonify
+from werkzeug.utils import secure_filename
 from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
 from db_setup import Base, Category, Venue
 import json, requests, httplib2, os
 
 
+UPLOAD_DIR = 'static/img/uploads'
+ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
+CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
+CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
+LIMIT = 11
+
 app = Flask(__name__)
-#app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+app.config['UPLOAD_DIR'] = UPLOAD_DIR
 engine = create_engine('sqlite:///venue.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
-
-CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
-CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
-LIMIT = 11
 
 
 @app.context_processor
@@ -106,8 +109,8 @@ def get_venues(query, location, offset=0):
 
     for index in range(num_of_venues):
         if index == LIMIT-1:
-            results.append('LIMIT')
-            break
+            results.append('LIMIT')   # Template displays URL to more results
+            break                     # when this index exists
         info = {}
         venue = data['response']['groups'][0]['items'][index]['venue']
         info['api_id'] = venue['id']
@@ -139,6 +142,26 @@ def get_venues(query, location, offset=0):
         results.append(info)
 
     return results
+
+
+@app.route('/image', methods=['POST'])
+def handle_image_upload():
+    url = redirect(url_for('add_custom_venue'))
+
+    if not request.files['file']:
+        flash('Please select a file to upload.')
+        return url
+
+    ext = image.filename.rsplit('.', 1)[1]
+    if '.' in image.filename and ext in ALLOWED_EXT:
+        filename = secure_filename(image.filename)
+        image.save('static/img/uploads/' + filename)
+        image.close()
+        flash('Upload successful!')
+        return url
+    else:
+        flash('Unsupported file extension.')
+        return url
 
 
 @app.route('/add', methods=['POST'])
@@ -247,6 +270,12 @@ def delete_venue(category_key, venue_key):
     return redirect(url_for('show_catalog'))
 
 
+@app.route('/json')
+def show_catalog_json():
+    categories = session.query(Category).all()
+    return jsonify([i.serialize for i in categories])
+
+
 @app.route('/', methods=['GET','POST'])
 def show_catalog():
     if request.method == 'POST':
@@ -257,6 +286,28 @@ def show_catalog():
     venues = session.query(Venue).order_by(asc(Venue.name))
 
     return render_template('catalog.html', categories=categories, venues=venues)
+
+
+@app.route('/search/json')
+def search_json():
+    if request.args.get('offset') is None:
+        offset = 0
+    else:
+        offset = request.args.get('offset')
+
+    data = get_venues(request.args.get('query'), request.args.get('location'),
+           offset)
+    if data is None:
+        error_msg = 'Either an error occurred while processing the request or \
+                     there are no results to display for the given parameters.'
+        return make_response(error_msg, 404)
+
+    try:
+        del data[LIMIT-1]
+    except IndexError:
+        pass
+
+    return jsonify(data)
 
 
 @app.route('/search')
@@ -275,12 +326,24 @@ def search():
         location=request.args.get('location'), query=request.args.get('query'))
 
 
+@app.route('/category/<int:category_key>/json')
+def show_venues_json(category_key):
+    venues = session.query(Venue).filter_by(category_key=category_key).all()
+    return jsonify([i.serialize for i in venues])
+
+
 @app.route('/category/<int:category_key>')
 def show_venues(category_key):
     categories = session.query(Category).order_by(asc(Category.name))
     venues = session.query(Venue).filter_by(category_key=category_key).order_by(
              asc(Venue.name))
     return render_template('venues.html', categories=categories, venues=venues)
+
+
+@app.route('/category/<int:category_key>/venue/<int:venue_key>/json')
+def show_info_json(category_key, venue_key):
+    venue = session.query(Venue).filter_by(key=venue_key).one()
+    return jsonify(venue.serialize)
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>')

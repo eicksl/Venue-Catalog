@@ -1,4 +1,5 @@
 {% extends 'main.html' %}
+{% from 'macros.html' import display_flash %}
 {% block title %} New Venue {% endblock %}
 {% block content %}
 
@@ -12,15 +13,16 @@
     <input type='submit' value='Submit'>
   </form>
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <ul>
-      {% for msg in messages %}
-        <li><strong> {{msg}} </strong></li>
-      {% endfor %}
-     </ul>
-    {% endif %}
-  {% endwith %}
+  <p>Image</p>
+  <form action="{{url_for('handle_image_upload')}}" method='POST'
+        enctype='multipart/form-data'>
+    <input type='file' name='file'>
+    <input type='submit' value='Upload'>
+  </form>
+
+  <br><br><br>
+
+{{display_flash()}}
 
   <br><br><br><br><br><br>
 
