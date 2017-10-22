@@ -1,5 +1,8 @@
 {% extends 'new.html' %}
 {% block title %} Edit Venue {% endblock %}
+
+{% if not venue|default(false) %}
+
 {% block value %}
 
   {% if index == 'category' %}
@@ -9,3 +12,5 @@
   {% endif %}
 
 {% endblock %}
+
+{% endif %}

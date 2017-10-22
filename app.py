@@ -7,7 +7,7 @@ from db_setup import Base, Category, Venue
 import json, requests, httplib2, os
 
 
-UPLOAD_DIR = 'static/img/uploads'
+UPLOAD_DIR = 'static/img/uploads/'
 ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
 CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
@@ -144,24 +144,44 @@ def get_venues(query, location, offset=0):
     return results
 
 
-@app.route('/image', methods=['POST'])
-def handle_image_upload():
-    url = redirect(url_for('add_custom_venue'))
-
-    if not request.files['file']:
-        flash('Please select a file to upload.')
-        return url
-
-    ext = image.filename.rsplit('.', 1)[1]
-    if '.' in image.filename and ext in ALLOWED_EXT:
-        filename = secure_filename(image.filename)
-        image.save('static/img/uploads/' + filename)
-        image.close()
-        flash('Upload successful!')
-        return url
+def valid_image(image):
+    if not image:
+        return True
     else:
-        flash('Unsupported file extension.')
-        return url
+        return '.' in image.filename and \
+               image.filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
+
+
+def validate_form():
+    image = request.files['image']
+    if (not request.form['category'] or not request.form['name']
+    or not valid_image(image)):
+        if not request.form['category'] or not request.form['name']:
+            flash('Category and Name fields are required.')
+        if not valid_image(image):
+            flash('Unsupported file extension.')
+        venue = {}
+        info = ['category', 'name', 'address', 'phone', 'description']
+        for index in info:
+            if request.form[index]:
+                venue[index] = request.form[index]
+        return venue
+    else:
+        return None
+
+
+def handle_image_upload(image, venue_key):
+    if not image:
+        return None
+
+    ext = image.filename.rsplit('.', 1)[1].lower()
+    filename = str(venue_key) + '.' + ext
+    path_from_main = UPLOAD_DIR + filename
+    path_from_static = UPLOAD_DIR.replace('static/', '', 1) + filename
+    image.save(path_from_main)
+    image.close()
+
+    return path_from_static
 
 
 @app.route('/add', methods=['POST'])
@@ -174,13 +194,14 @@ def add_venue():
         session.add(new_category)
 
     q = session.query(Category.key).filter_by(name=venue['category']).scalar()
+    category = venue['category']
     del venue['in_db'], venue['category']
     new_venue = Venue(category_key=q, **venue)
     session.add(new_venue)
     session.commit()
 
     flash('New venue {} added in category {}'.format(
-          venue['name'], venue['category']))
+          venue['name'], category))
     return redirect(url_for('show_catalog'))
 
 
@@ -189,9 +210,9 @@ def add_custom_venue():
     if request.method == 'GET':
         return render_template('new.html')
 
-    if not request.form['category'] or not request.form['name']:
-        flash('Category and Name fields are required.')
-        return redirect(url_for('add_custom_venue'))
+    form_values = validate_form()
+    if form_values:
+        return render_template('new.html', venue=form_values)
 
     category = ' '.join(request.form['category'].title().split())
     if session.query(Category.name).filter_by(name=category).scalar() is None:
@@ -203,6 +224,10 @@ def add_custom_venue():
     new_venue = Venue(category_key=q, name=name, phone=request.form['phone'],
                 address=request.form['address'],
                 description=request.form['description'])
+    session.add(new_venue)
+    session.commit()
+
+    new_venue.image = handle_image_upload(request.files['image'], new_venue.key)
     session.add(new_venue)
     session.commit()
 
@@ -221,9 +246,9 @@ def edit_venue(category_key, venue_key):
         return render_template('edit.html', venue=venue,
                category_name=old_category_str)
 
-    if not request.form['category'] or not request.form['name']:
-        flash('Category and Name fields are required.')
-        return redirect(url_for('edit_venue'))
+    form_values = validate_form()
+    if form_values:
+        return render_template('edit.html', venue=form_values)
 
     new_category_str = ' '.join(request.form['category'].title().split())
     new_name_str = ' '.join(request.form['name'].title().split())
@@ -238,6 +263,11 @@ def edit_venue(category_key, venue_key):
         new_category_obj = Category(name=new_category_str)
         session.add(new_category_obj)
         venue.category_key = new_category_obj.key
+
+    if request.files['image']:
+        if venue.image and venue.image[:8] != 'https://':
+            os.remove('static/' + venue.image)
+        venue.image = handle_image_upload(request.files['image'], venue.key)
 
     venue.name = new_name_str
     venue.address = request.form['address']
@@ -262,6 +292,9 @@ def delete_venue(category_key, venue_key):
         old_category_obj = session.query(Category).filter_by(
                            key=category_key).one()
         session.delete(old_category_obj)
+
+    if venue.image and venue.image[:8] != 'https://':
+        os.remove('static/' + venue.image)
 
     session.delete(venue)
     session.commit()

@@ -3,22 +3,31 @@
 {% block title %} New Venue {% endblock %}
 {% block content %}
 
-  <form action='#' method='POST'>
+  <form action='' method='POST' enctype='multipart/form-data'>
+    <p>image</p>
+    <input type='file' name='image'>
     {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
     {% for index in info %}
       <p> {{index}} </p>
       <input type='text' size='30' name='{{index}}'
-            {% block value scoped %}{% endblock %}>
+        {% block value scoped %}
+          {% if venue|default(false) and venue[index] %}
+              value='{{venue[index]}}'
+          {% endif %}
+        {% endblock %}>
+
     {% endfor %}
     <input type='submit' value='Submit'>
   </form>
 
+{#
   <p>Image</p>
   <form action="{{url_for('handle_image_upload')}}" method='POST'
         enctype='multipart/form-data'>
     <input type='file' name='file'>
     <input type='submit' value='Upload'>
   </form>
+#}
 
   <br><br><br>
 

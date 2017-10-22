@@ -5,7 +5,12 @@
   <div class='venues'>
     <div class='images'>
       {% if venue.image %}
-        <img src="{{venue['image']}}">
+        {% if venue.image[:8] == 'https://' %}
+          <img src="{{venue['image']}}">
+        {% else %}
+          <img src="{{url_for('static', filename=venue.image)}}"
+               width='300px' height='300px'>
+        {% endif %}
       {% else %}
         <img src="{{url_for('static', filename='img/placeholder.png')}}"
                                            alt='Placeholder Image'>
