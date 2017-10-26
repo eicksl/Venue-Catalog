@@ -1,10 +1,12 @@
 from flask import Flask, render_template, url_for, flash
 from flask import request, make_response, redirect, jsonify
+from flask import session as login_session
 from werkzeug.utils import secure_filename
 from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
+from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from db_setup import Base, Category, Venue
-import json, requests, httplib2, os
+import json, requests, os, random, string
 
 
 UPLOAD_DIR = 'static/img/uploads/'
@@ -182,6 +184,14 @@ def handle_image_upload(image, venue_key):
     image.close()
 
     return path_from_static
+
+
+@app.route('/login')
+def show_login():
+    login_session['state'] = ''.join(random.choice(
+            string.ascii_uppercase + string.digits) for i in range(32))
+    #return 'Current session state: ' + login_session['state']
+    return render_template('login.html', state=login_session['state'])
 
 
 @app.route('/add', methods=['POST'])
