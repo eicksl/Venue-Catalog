@@ -18,35 +18,36 @@
           data-approvalprompt='force'>
     </span>
 
-    <div id='response'></div>
-
-    <script>
-      function signInCallback(authResult) {
-        if (authResult['code']) {
-          $('#g-login-btn').attr('style', 'display: none');
-          $.ajax({
-            type: 'POST',
-            url: '/gconnect?state={{state}}',
-            processData: false,
-            contentType: 'application/octet-stream; charset=utf-8'
-            data: authResult['code'],
-            success: function(response) {
-              if (response) {
-                $('#response').html('Login Successful!<br>' + response +
-                      '<br>Redirecting...')
-                setTimeout(function() {
-                  window.location.href = '/';
-                }, 3000);
-              } else if (authResult['error']) {
-                console.log('Error: ' + authResult['error']);
-              } else {
-                $('#result').html('Server-side call failure.');
-              }
-            }
-          });
-        }
-      }
-    </script>
-
   </div>
+
+  <div id='response'></div>
+
+  <script>
+    function signInCallback(authResult) {
+      if (authResult['code']) {
+        $('#g-login-btn').attr('style', 'display: none');
+        $.ajax({
+          type: 'POST',
+          url: '/gconnect?state={{state}}',
+          processData: false,
+          contentType: 'application/octet-stream; charset=utf-8'
+          data: authResult['code'],
+          success: function(response) {
+            if (response) {
+              $('#response').html('Login Successful!<br>' + response +
+                    '<br>Redirecting...')
+              setTimeout(function() {
+                window.location.href = '/';
+              }, 3000);
+            } else if (authResult['error']) {
+              console.log('Error: ' + authResult['error']);
+            } else {
+              $('#result').html('Server-side call failure.');
+            }
+          }
+        });
+      }
+    }
+  </script>
+
 {% endblock %}

@@ -8,7 +8,8 @@ from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from db_setup import Base, Category, Venue
 import json, requests, os, random, string
 
-
+G_OAUTH_ID = '441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps\
+              .googleusercontent.com'
 UPLOAD_DIR = 'static/img/uploads/'
 ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
@@ -21,6 +22,63 @@ engine = create_engine('sqlite:///venue.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
+
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    '''if request.args.get('state') != login_session['state']:
+        return make_response('State is invalid', 401)
+
+    code = request.data
+    try:
+        oauth_flow = flow_from_clientsecrets('g_oauth_client_secrets.json',
+                     scope='')
+        oauth_flow.redirect_uri = 'postmessage'
+        credentials = oauth_flow.step2_exchange(code)
+    except FlowExchangeError:
+        return make_response('Failed to exchange the authorization code for a \
+                              credentials object', 401)
+
+    access_token = credentials.access_token
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
+           % access_token)
+    result = json.loads(requests.get(url))
+    if result.get('error'):
+        return make_response(result.get('error'), 500)
+
+    gplus_id = credentials.id_token['sub']
+    if gplus_id != result['user_id']:
+        return make_response('Token ID does not match with given user ID', 401)
+
+    if result['issued_to'] != G_OAUTH_ID:
+        return make_response('Token client ID does not match with app ID', 401)
+
+    stored_credentials = login_session.get('credentials')
+    stored_gplus_id = login_session.get('gplus_id')
+    if stored_access_token and gplus_id == stored_gplus_id:
+        return make_response('User is already connect', 200)
+
+    login_session['credentials'] = credentials
+    login_session['gplus_id'] = gplus_id
+
+    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
+    params = {'access_token': credentials.access_token, 'alt': 'json'}
+    answer = requests.get(userinfo_url, params=params)
+
+    data = json.loads(answer.text)
+    login_session['username'] = data['name']
+    login_session['email'] = data['email']
+
+    #return login_session['username'] + '\n' + login_session['email']
+    return redirect(url_for('test', username=login_session['username'],
+            email=login_session['email']))'''
+    return redirect(url_for('test', state=request.args.get('state')))
+
+
+@app.route('/test')
+def test():
+    #return request.args.get('username') + '\n' + request.args.get('email')
+    return request.args.get('state')
 
 
 @app.context_processor
