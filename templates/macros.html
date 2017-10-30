@@ -9,3 +9,25 @@
     {% endif %}
   {% endwith %}
 {% endmacro %}
+
+{% macro display_logout() %}
+  <div hidden class='g-signin2' data-onsuccess='onSignIn'></div>
+  <button id='logout' onclick='signOut();'> Logout </button>
+  <script>
+    function signOut() {
+      var auth = gapi.auth2.getAuthInstance();
+      auth.signOut();
+      $.ajax({
+        type: 'GET',
+        url: '/gdisconnect',
+        success: function(result) {
+          $('#logout').replaceWith('<p>Redirecting...</p>')
+          console.log(result);
+          setTimeout(function() {
+            window.location.href = '/';
+          }, 2000);
+        }
+      });
+    }
+  </script>
+{% endmacro %}

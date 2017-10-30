@@ -1,14 +1,18 @@
 {% extends 'main.html' %}
-{% from 'macros.html' import display_flash %}
+{% from 'macros.html' import display_flash, display_logout %}
 {% block title %} Venue Catalog {% endblock %}
 {% block content %}
 
-  {% if has_not_searched or search_failed %}
-    <form action="{{url_for('show_catalog')}}" method='GET'>
+  {% if username %}
+    {{display_logout()}}
+    <br><br><br>
   {% else %}
-    <form action="{{url_for('search', location=location, query=query)}}"
-          method='GET'>
+    <a href="{{url_for('show_login')}}"> Login </a>
+    <br><br><br>
   {% endif %}
+
+  <form action="{{url_for('search', location=location, query=query)}}"
+        method='GET'>
       <p>Location:</p>
       <input type='text' size='30' name='location'>
       <p>Query:</p>

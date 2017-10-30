@@ -5,16 +5,20 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
-from db_setup import Base, Category, Venue
+from db_setup import Base, User, Category, Venue
+#from google.oauth2 import id_token
+#from google.auth.transport import requests
 import json, requests, os, random, string
 
-G_OAUTH_ID = '441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps\
-              .googleusercontent.com'
+
+G_OAUTH_ID = ('441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps'
+              '.googleusercontent.com')
 UPLOAD_DIR = 'static/img/uploads/'
 ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
 CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
-LIMIT = 11
+LIMIT = 11   # LIMIT-1 results are shown on the search page. An extra item
+             # is used to indicate whether there are more results to display.
 
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
@@ -26,69 +30,48 @@ session = DBSession()
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    '''if request.args.get('state') != login_session['state']:
-        return make_response('State is invalid', 401)
-
-    code = request.data
-    try:
-        oauth_flow = flow_from_clientsecrets('g_oauth_client_secrets.json',
-                     scope='')
-        oauth_flow.redirect_uri = 'postmessage'
-        credentials = oauth_flow.step2_exchange(code)
-    except FlowExchangeError:
-        return make_response('Failed to exchange the authorization code for a \
-                              credentials object', 401)
-
-    access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
-           % access_token)
-    result = json.loads(requests.get(url))
-    if result.get('error'):
-        return make_response(result.get('error'), 500)
-
-    gplus_id = credentials.id_token['sub']
-    if gplus_id != result['user_id']:
-        return make_response('Token ID does not match with given user ID', 401)
-
-    if result['issued_to'] != G_OAUTH_ID:
-        return make_response('Token client ID does not match with app ID', 401)
-
-    stored_credentials = login_session.get('credentials')
-    stored_gplus_id = login_session.get('gplus_id')
-    if stored_access_token and gplus_id == stored_gplus_id:
-        return make_response('User is already connect', 200)
-
-    login_session['credentials'] = credentials
-    login_session['gplus_id'] = gplus_id
-
-    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-    params = {'access_token': credentials.access_token, 'alt': 'json'}
-    answer = requests.get(userinfo_url, params=params)
-
-    data = json.loads(answer.text)
-    login_session['username'] = data['name']
-    login_session['email'] = data['email']
-
-    #return login_session['username'] + '\n' + login_session['email']
-    return redirect(url_for('test', username=login_session['username'],
-            email=login_session['email']))'''
-    return redirect(url_for('test', state=request.args.get('state')))
+    url = ('https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=%s'
+            % request.form['token'])
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        error_msg = 'Login was aborted due to an invalid token'
+        flash(error_msg)
+        return error_msg
+    info = json.loads(resp.text)
+    if info['aud'] != G_OAUTH_ID:
+        error_msg = 'Login was aborted due to an invalid client ID'
+        flash(error_msg)
+        return error_msg
+    sub = info['sub'] # Unique google account identifier
+    existing = session.query(User).filter_by(sub=sub).one()
+    if existing:
+        flash('Welcome back, {}!'.format(existing.name))
+        login_session['user_key'] = existing.key
+        return 'Login successful'
+    new_user = User(name=info['given_name'], email=info['email'], sub=sub)
+    session.add(new_user)
+    session.commit()
+    flash('Thanks for joining, {}!'.format(new_user.name))
+    login_session['user_key'] = new_user.key
+    return 'Registration successful'
 
 
-@app.route('/test')
-def test():
-    #return request.args.get('username') + '\n' + request.args.get('email')
-    return request.args.get('state')
+@app.route('/gdisconnect')
+def gdisconnect():
+    del login_session['user_key']
+    msg = 'Logout successful'
+    flash(msg)
+    return msg
 
 
 @app.context_processor
 def override_url_for():
-    '''Cache buster; see http://flask.pocoo.org/snippets/40'''
+    '''Cache buster by Eric Buckley; see http://flask.pocoo.org/snippets/40'''
     return dict(url_for=dated_url_for)
 
 
 def dated_url_for(endpoint, **values):
-    '''Cache buster; see http://flask.pocoo.org/snippets/40'''
+    '''Cache buster by Eric Buckley; see http://flask.pocoo.org/snippets/40'''
     if endpoint == 'static':
         filename = values.get('filename', None)
         if filename:
@@ -246,10 +229,15 @@ def handle_image_upload(image, venue_key):
 
 @app.route('/login')
 def show_login():
-    login_session['state'] = ''.join(random.choice(
-            string.ascii_uppercase + string.digits) for i in range(32))
-    #return 'Current session state: ' + login_session['state']
-    return render_template('login.html', state=login_session['state'])
+    #login_session['state'] = ''.join(random.choice(
+    #        string.ascii_uppercase + string.digits) for i in range(32))
+    #return render_template('login.html', state=login_session['state'])
+    #117513008074152307142
+    #existing = session.query(User).filter_by(sub='117513008074152307142').one()
+    #login_session['user_key'] = existing.key
+    #flash('Welcome back, {}!'.format(existing.name))
+    #login_session['user'] = existing
+    return render_template('login.html')
 
 
 @app.route('/add', methods=['POST'])
@@ -385,8 +373,14 @@ def show_catalog():
 
     categories = session.query(Category).order_by(asc(Category.name))
     venues = session.query(Venue).order_by(asc(Venue.name))
+    if 'user_key' in login_session:
+        username = session.query(User.name).filter_by(
+                   key=login_session['user_key']).scalar()
+    else:
+        username = None
 
-    return render_template('catalog.html', categories=categories, venues=venues)
+    return render_template('catalog.html', categories=categories,
+           venues=venues, username=username)
 
 
 @app.route('/search/json')

@@ -4,12 +4,12 @@
     <title>
       {% block title %}{% endblock %}
     </title>
-    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap
-          /4.0.0-beta.2/css/bootstrap.min.css' integrity='sha384-PsH8R72JQ
-          3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb'
-          crossorigin='anonymous'>
+    <meta name='google-signin-scope' content='profile email'>
+    <meta name='google-signin-client_id' content='441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps.googleusercontent.com'>
     <link rel='stylesheet' type='text/css'
           href="{{url_for('static', filename='css/main.css')}}">
+    <script src='https://apis.google.com/js/platform.js' async defer></script>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
     {% block scripts %}{% endblock %}
   </head>
   <body>
