@@ -6,8 +6,6 @@ from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from db_setup import Base, User, Category, Venue
-#from google.oauth2 import id_token
-#from google.auth.transport import requests
 import json, requests, os, random, string
 
 
@@ -30,6 +28,10 @@ session = DBSession()
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    if request.form['state'] != login_session['state']:
+        error_msg = 'Session state string mismatch'
+        flash(error_msg)
+        return error_msg
     url = ('https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=%s'
             % request.form['token'])
     resp = requests.get(url)
@@ -229,15 +231,15 @@ def handle_image_upload(image, venue_key):
 
 @app.route('/login')
 def show_login():
-    #login_session['state'] = ''.join(random.choice(
-    #        string.ascii_uppercase + string.digits) for i in range(32))
-    #return render_template('login.html', state=login_session['state'])
+    login_session['state'] = ''.join(random.choice(
+            string.ascii_uppercase + string.digits) for i in range(32))
+    return render_template('login.html', state=login_session['state'])
     #117513008074152307142
     #existing = session.query(User).filter_by(sub='117513008074152307142').one()
     #login_session['user_key'] = existing.key
     #flash('Welcome back, {}!'.format(existing.name))
     #login_session['user'] = existing
-    return render_template('login.html')
+    #return render_template('login.html')
 
 
 @app.route('/add', methods=['POST'])
@@ -448,6 +450,7 @@ def show_info(category_key, venue_key):
 
 
 if __name__ == '__main__':
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     app.secret_key = 'ROFLMAO'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)

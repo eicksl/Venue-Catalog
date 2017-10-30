@@ -2,7 +2,14 @@
 {% block title %} Venue Catalog Login {% endblock %}
 {% block content %}
 
-  <div class='g-signin2' data-onsuccess='onSignIn'></div>
+  <div hidden class='g-signin2' data-onsuccess='onSignIn' data-width='240'
+       data-longtitle='true'></div>
+
+  <br><br><br>
+
+  <div class="fb-login-button" data-width="30" data-max-rows="1"
+       data-size="large" data-button-type="login_with" data-show-faces="false"
+       data-auto-logout-link="false" data-use-continue-as="false"></div>
 
   <script>
     function onSignIn(googleUser) {
@@ -10,7 +17,10 @@
       $.ajax({
         type: 'POST',
         url: '/gconnect',
-        data: {token: token},
+        data: {
+          token: token,
+          state: '{{state}}'
+        },
         success: function(result) {
           $('.g-signin2').replaceWith('<p>Redirecting...</p>')
           console.log(result);
@@ -20,6 +30,12 @@
         }
       });
     }
+    // Because the FB login button load speed is considerably slower,
+    // a timeout is used to make both buttons display synchronously
+    setTimeout(function() {
+      $('.g-signin2').removeAttr('hidden');
+      $('.fb-login-button').removeAttr('hidden');
+    }, 500);
   </script>
 
 {% endblock %}
