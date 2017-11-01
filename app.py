@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, inspect, asc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from db_setup import Base, User, Category, Venue
-import json, requests, os, random, string
+import json, requests, os, random, string, httplib2
 
 
 G_OAUTH_ID = ('441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps'
@@ -31,39 +31,89 @@ def gconnect():
     if request.form['state'] != login_session['state']:
         error_msg = 'Session state string mismatch'
         flash(error_msg)
-        return error_msg
-    url = ('https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=%s'
-            % request.form['token'])
-    resp = requests.get(url)
-    if resp.status_code != 200:
+        return make_response(error_msg, 401)
+
+    try:
+        auth_code = request.form['code']
+        flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        flow.redirect_uri = 'postmessage'
+        credentials = flow.step2_exchange(auth_code)
+    except FlowExchangeError:
+        error_msg = 'Could not obtain and exchange the authorization code'
+        flash(error_msg)
+        return make_response(error_msg, 401)
+
+    token = credentials.access_token
+    url = 'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=%s' % token
+    http = httplib2.Http()
+    resp = http.request(url, 'GET')
+    if resp[0]['status'] != '200':
         error_msg = 'Login was aborted due to an invalid token'
         flash(error_msg)
-        return error_msg
-    info = json.loads(resp.text)
-    if info['aud'] != G_OAUTH_ID:
+        return make_response(error_msg, 401)
+
+    data = json.loads(resp[1].decode())
+    if data['aud'] != G_OAUTH_ID:
         error_msg = 'Login was aborted due to an invalid client ID'
         flash(error_msg)
-        return error_msg
-    sub = info['sub'] # Unique google account identifier
+        return make_response(error_msg, 401)
+
+    login_session['token'] = token
+    login_session['provider'] = 'google'
+
+    sub = data['sub'] # Unique google account identifier
     existing = session.query(User).filter_by(sub=sub).one()
     if existing:
         flash('Welcome back, {}!'.format(existing.name))
         login_session['user_key'] = existing.key
-        return 'Login successful'
+        return make_response('Login successful', 200)
+
+    url = "https://www.googleapis.com/oauth2/v3/userinfo"
+    params = {'access_token': token, 'alt': 'json'}
+    resp = requests.get(url, params=params)
+    info = resp.json()
+
     new_user = User(name=info['given_name'], email=info['email'], sub=sub)
     session.add(new_user)
     session.commit()
     flash('Thanks for joining, {}!'.format(new_user.name))
     login_session['user_key'] = new_user.key
-    return 'Registration successful'
+    return make_response('Registration successful', 200)
 
 
 @app.route('/gdisconnect')
 def gdisconnect():
+    try:
+        del login_session['user_key']
+        del login_session['token']
+        del login_session['provider']
+        return make_response('Logout successful', 200)
+    except KeyError:
+        return make_response('User not connected', 500)
+
+    '''if 'token' not in login_session:
+        return make_response('User not connected', 500)'''
+
+    '''r = requests.post('https://accounts.google.com/o/oauth2/revoke',
+    params={'token': login_session['token']},
+    headers = {'content-type': 'application/x-www-form-urlencoded'})
+    return r.text'''
+
+    '''url = 'https://accounts.google.com/o/oauth2/revoke?token={}'.format(
+          login_session['token'])
+    http = httplib2.Http()
+    resp = http.request(url, 'GET')
+    #return resp[1].decode()
+
+    if resp[0]['status'] != '200':
+        msg = 'An error occurred during the request to revoke access token'
+        return make_response(msg, 400)
+
+    del login_session['token']
     del login_session['user_key']
-    msg = 'Logout successful'
-    flash(msg)
-    return msg
+    del login_session['provider']
+
+    return make_response('Logout successful', 200)'''
 
 
 @app.context_processor

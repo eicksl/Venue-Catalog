@@ -2,40 +2,75 @@
 {% block title %} Venue Catalog Login {% endblock %}
 {% block content %}
 
-  <div hidden class='g-signin2' data-onsuccess='onSignIn' data-width='240'
-       data-longtitle='true'></div>
+<div class='g-signin2'
+data-scope='openid profile email'
+data-clientid='441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps.googleusercontent.com'
+data-accesstype='offline'
+data-onsuccess='onSignIn'
+data-width='240'>
+</div>
 
   <br><br><br>
 
-  <div class="fb-login-button" data-width="30" data-max-rows="1"
-       data-size="large" data-button-type="login_with" data-show-faces="false"
-       data-auto-logout-link="false" data-use-continue-as="false"></div>
+
+
+  <div class='fb-login-button' data-width='30' data-max-rows='1'
+       data-size='large' data-button-type='login_with' data-show-faces='false'
+       data-auto-logout-link='false' data-use-continue-as='false'
+       scope='public_profile,email' onlogin='getToken();'></div>
+
+
+
+
+  <style>
+    .g-signin2 {display: none}
+    .fb-login-button {display: none}
+  </style>
+
+  <br><br><br>
+
+  <button id='logout' onclick='signOut();'> Logout </button>
 
   <script>
-    function onSignIn(googleUser) {
-      var token = googleUser.getAuthResponse().id_token;
+    function onSignIn(authResult) {
       $.ajax({
         type: 'POST',
         url: '/gconnect',
-        data: {
-          token: token,
-          state: '{{state}}'
-        },
+        data: {code: authResult['code'], state: '{{state}}'},
         success: function(result) {
-          $('.g-signin2').replaceWith('<p>Redirecting...</p>')
+          //$('.g-signin2').replaceWith('<p>Redirecting...</p>')
           console.log(result);
-          setTimeout(function() {
-            window.location.href = '/';
-          }, 2000);
+          //setTimeout(function() {
+            //window.location.href = '/';
+          //}, 2000);
         }
       });
+    }
+    function signOut() {
+      var auth = gapi.auth2.getAuthInstance();
+      if (auth.isSignedIn.get()) {
+        auth.signOut();
+        $.ajax({
+          type: 'GET',
+          url: '/gdisconnect',
+          success: function(result) {
+            //$('#logout').replaceWith('<p>Redirecting...</p>')
+            console.log(result);
+            //setTimeout(function() {
+              //window.location.href = '/';
+            //}, 2000);
+          }
+        });
+      }
     }
     // Because the FB login button load speed is considerably slower,
     // a timeout is used to make both buttons display synchronously
     setTimeout(function() {
-      $('.g-signin2').removeAttr('hidden');
-      $('.fb-login-button').removeAttr('hidden');
-    }, 500);
+      //$('.g-signin2').removeAttr('hidden');
+      //$('.fb-login-button').removeAttr('hidden');
+      $('.g-signin2').show();
+      $('.fb-login-button').show();
+    }, 600);
   </script>
 
 {% endblock %}
