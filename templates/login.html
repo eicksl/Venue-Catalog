@@ -17,9 +17,7 @@ data-width='240'>
   <div class='fb-login-button' data-width='30' data-max-rows='1'
        data-size='large' data-button-type='login_with' data-show-faces='false'
        data-auto-logout-link='false' data-use-continue-as='false'
-       scope='public_profile,email' onlogin='getToken();'></div>
-
-
+       scope='public_profile,email' onlogin='sendFacebookToken();'></div>
 
 
   <style>
@@ -32,6 +30,23 @@ data-width='240'>
   <button id='logout' onclick='signOut();'> Logout </button>
 
   <script>
+
+    function sendFacebookToken() {
+      $.ajax({
+        type: 'POST',
+        url: '/fbconnect',
+        data: {
+          token: FB.getAccessToken(),
+          fb_id: FB.getUserID(),
+          state: '{{state}}'
+        },
+        success: function(result) {
+          console.log(result);
+        }
+      });
+    }
+
+
     function onSignIn(authResult) {
       $.ajax({
         type: 'POST',
@@ -50,18 +65,29 @@ data-width='240'>
       var auth = gapi.auth2.getAuthInstance();
       if (auth.isSignedIn.get()) {
         auth.signOut();
-        $.ajax({
-          type: 'GET',
-          url: '/gdisconnect',
-          success: function(result) {
-            //$('#logout').replaceWith('<p>Redirecting...</p>')
-            console.log(result);
-            //setTimeout(function() {
-              //window.location.href = '/';
-            //}, 2000);
-          }
+        callDisconnect();
+      } else {
+        FB.getLoginStatus(function(response) {
+          connected = response.status === 'connected';
         });
+        if (connected) {
+          FB.logout();
+          callDisconnect();
+        }
       }
+    }
+    function callDisconnect() {
+      $.ajax({
+        type: 'GET',
+        url: '/disconnect',
+        success: function(result) {
+          //$('#logout').replaceWith('<p>Redirecting...</p>')
+          console.log(result);
+          //setTimeout(function() {
+            //window.location.href = '/';
+          //}, 2000);
+        }
+      });
     }
     // Because the FB login button load speed is considerably slower,
     // a timeout is used to make both buttons display synchronously

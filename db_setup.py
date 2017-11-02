@@ -13,6 +13,7 @@ class User(Base):
     name = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
     sub = Column(String(250)) # Unique google account identifier
+    fb_id = Column(String(250)) # Unique facebook account identifier
 
 
 class Category(Base):

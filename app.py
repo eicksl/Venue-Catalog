@@ -26,6 +26,68 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
+@app.route('/fbconnect', methods=['POST'])
+def fbconnect():
+    if request.form['state'] != login_session['state']:
+        error_msg = 'Session state string mismatch'
+        flash(error_msg)
+        return make_response(error_msg, 401)
+
+    short_term_token = request.form['token']
+    app_id = json.loads(open(
+        'fb_client_secrets.json', 'r').read())['web']['app_id']
+    app_secret = json.loads(open(
+        'fb_client_secrets.json', 'r').read())['web']['app_secret']
+    auth_url = ('https://graph.facebook.com/oauth/access_token?grant_type='
+        'fb_exchange_token&client_id={}&client_secret={}'
+        '&fb_exchange_token={}').format(app_id, app_secret, short_term_token)
+
+    http = httplib2.Http()
+    resp = http.request(auth_url, 'GET')
+    if resp[0]['status'] != '200':
+        error_msg = 'Login was aborted due to an invalid token'
+        flash(error_msg)
+        return make_response(error_msg, 401)
+
+    long_term_token = json.loads(resp[1].decode())['access_token']
+
+    info_url = 'https://graph.facebook.com/v2.8/me'
+    params = {
+        'access_token': long_term_token,
+        'fields': 'name,id,email'
+    }
+    resp = requests.get(info_url, params)
+    info = resp.json()
+
+    login_session['token'] = long_term_token
+    login_session['provider'] = 'facebook'
+
+    fb_id = request.form['fb_id'] # Unique facebook account identifier
+    email = info['email']
+    fb_id_in_db = session.query(User.fb_id).filter_by(fb_id=fb_id).scalar()
+    email_in_db = session.query(User.email).filter_by(email=email).scalar()
+
+    existing = None
+    if not fb_id_in_db and email_in_db:
+        existing = session.query(User).filter_by(email=email).one()
+        existing.fb_id = fb_id
+    elif fb_id_in_db:
+        existing = session.query(User).filter_by(fb_id=fb_id).one()
+
+    if existing:
+        flash('Welcome back, {}!'.format(existing.name))
+        login_session['user_key'] = existing.key
+        return make_response('Login successful', 200)
+
+    name = ' '.join(info['name'].split(' ')[:-1])
+    new_user = User(name=name, email=email, fb_id=fb_id)
+    session.add(new_user)
+    session.commit()
+    flash('Thanks for joining, {}!'.format(new_user.name))
+    login_session['user_key'] = new_user.key
+    return make_response('Registration successful', 200)
+
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.form['state'] != login_session['state']:
@@ -35,7 +97,7 @@ def gconnect():
 
     try:
         auth_code = request.form['code']
-        flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
         flow.redirect_uri = 'postmessage'
         credentials = flow.step2_exchange(auth_code)
     except FlowExchangeError:
@@ -44,9 +106,10 @@ def gconnect():
         return make_response(error_msg, 401)
 
     token = credentials.access_token
-    url = 'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=%s' % token
+    auth_url = ('https://www.googleapis.com/oauth2/v3/tokeninfo?'
+                'access_token={}').format(token)
     http = httplib2.Http()
-    resp = http.request(url, 'GET')
+    resp = http.request(auth_url, 'GET')
     if resp[0]['status'] != '200':
         error_msg = 'Login was aborted due to an invalid token'
         flash(error_msg)
@@ -58,22 +121,32 @@ def gconnect():
         flash(error_msg)
         return make_response(error_msg, 401)
 
+    info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+    params = {'access_token': token, 'alt': 'json'}
+    resp = requests.get(info_url, params=params)
+    info = resp.json()
+
     login_session['token'] = token
     login_session['provider'] = 'google'
 
-    sub = data['sub'] # Unique google account identifier
-    existing = session.query(User).filter_by(sub=sub).one()
+    sub = data['sub'] # Unique facebook account identifier
+    email = info['email']
+    sub_in_db = session.query(User.sub).filter_by(sub=sub).scalar()
+    email_in_db = session.query(User.email).filter_by(email=email).scalar()
+
+    existing = None
+    if not sub_in_db and email_in_db:
+        existing = session.query(User).filter_by(email=email).one()
+        existing.sub = sub
+    elif sub_in_db:
+        existing = session.query(User).filter_by(sub=sub).one()
+
     if existing:
         flash('Welcome back, {}!'.format(existing.name))
         login_session['user_key'] = existing.key
         return make_response('Login successful', 200)
 
-    url = "https://www.googleapis.com/oauth2/v3/userinfo"
-    params = {'access_token': token, 'alt': 'json'}
-    resp = requests.get(url, params=params)
-    info = resp.json()
-
-    new_user = User(name=info['given_name'], email=info['email'], sub=sub)
+    new_user = User(name=info['given_name'], email=email, sub=sub)
     session.add(new_user)
     session.commit()
     flash('Thanks for joining, {}!'.format(new_user.name))
@@ -81,8 +154,8 @@ def gconnect():
     return make_response('Registration successful', 200)
 
 
-@app.route('/gdisconnect')
-def gdisconnect():
+@app.route('/disconnect')
+def disconnect():
     try:
         del login_session['user_key']
         del login_session['token']
@@ -90,30 +163,6 @@ def gdisconnect():
         return make_response('Logout successful', 200)
     except KeyError:
         return make_response('User not connected', 500)
-
-    '''if 'token' not in login_session:
-        return make_response('User not connected', 500)'''
-
-    '''r = requests.post('https://accounts.google.com/o/oauth2/revoke',
-    params={'token': login_session['token']},
-    headers = {'content-type': 'application/x-www-form-urlencoded'})
-    return r.text'''
-
-    '''url = 'https://accounts.google.com/o/oauth2/revoke?token={}'.format(
-          login_session['token'])
-    http = httplib2.Http()
-    resp = http.request(url, 'GET')
-    #return resp[1].decode()
-
-    if resp[0]['status'] != '200':
-        msg = 'An error occurred during the request to revoke access token'
-        return make_response(msg, 400)
-
-    del login_session['token']
-    del login_session['user_key']
-    del login_session['provider']
-
-    return make_response('Logout successful', 200)'''
 
 
 @app.context_processor
@@ -284,12 +333,6 @@ def show_login():
     login_session['state'] = ''.join(random.choice(
             string.ascii_uppercase + string.digits) for i in range(32))
     return render_template('login.html', state=login_session['state'])
-    #117513008074152307142
-    #existing = session.query(User).filter_by(sub='117513008074152307142').one()
-    #login_session['user_key'] = existing.key
-    #flash('Welcome back, {}!'.format(existing.name))
-    #login_session['user'] = existing
-    #return render_template('login.html')
 
 
 @app.route('/add', methods=['POST'])
@@ -500,7 +543,6 @@ def show_info(category_key, venue_key):
 
 
 if __name__ == '__main__':
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     app.secret_key = 'ROFLMAO'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)
