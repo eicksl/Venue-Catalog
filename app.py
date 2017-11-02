@@ -28,6 +28,7 @@ session = DBSession()
 
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
+    '''Exchanges short term token for long term one, then logs in the user'''
     if request.form['state'] != login_session['state']:
         error_msg = 'Session state string mismatch'
         flash(error_msg)
@@ -90,6 +91,8 @@ def fbconnect():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    '''Uses oauth2client library to exchange the authorization code for an
+    access token, then logs in the user'''
     if request.form['state'] != login_session['state']:
         error_msg = 'Session state string mismatch'
         flash(error_msg)
@@ -156,6 +159,7 @@ def gconnect():
 
 @app.route('/disconnect')
 def disconnect():
+    '''Deletes session data for the user, effectively revoking permissions'''
     try:
         del login_session['user_key']
         del login_session['token']
@@ -289,6 +293,7 @@ def get_venues(query, location, offset=0):
 
 
 def valid_image(image):
+    '''Checks if image exists and has an allowed extension'''
     if not image:
         return True
     else:
@@ -297,6 +302,8 @@ def valid_image(image):
 
 
 def validate_form():
+    '''If the form fields are valid, it will return a dictionary of user
+    input, else None'''
     image = request.files['image']
     if (not request.form['category'] or not request.form['name']
     or not valid_image(image)):
@@ -315,6 +322,8 @@ def validate_form():
 
 
 def handle_image_upload(image, venue_key):
+    '''If the image exists, it saves it to the server and returns the path
+    from the static directory. Otherwise returns None.'''
     if not image:
         return None
 
@@ -330,6 +339,7 @@ def handle_image_upload(image, venue_key):
 
 @app.route('/login')
 def show_login():
+    '''Renders login page view and passes a state string'''
     login_session['state'] = ''.join(random.choice(
             string.ascii_uppercase + string.digits) for i in range(32))
     return render_template('login.html', state=login_session['state'])
@@ -337,6 +347,7 @@ def show_login():
 
 @app.route('/add', methods=['POST'])
 def add_venue():
+    '''Adds a new venue from the search results to the database'''
     venue = json.loads(request.form['venue'])
 
     q = session.query(Category.name).filter_by(name=venue['category']).scalar()
@@ -358,6 +369,7 @@ def add_venue():
 
 @app.route('/new', methods=['GET','POST'])
 def add_custom_venue():
+    '''Adds a new user-defined venue to the database'''
     if request.method == 'GET':
         return render_template('new.html')
 
@@ -389,6 +401,7 @@ def add_custom_venue():
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/edit',
             methods=['GET','POST'])
 def edit_venue(category_key, venue_key):
+    '''Edits an existing venue in the database based on user input'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
     old_category_str = session.query(Category).filter_by(
                        key=category_key).one().name
@@ -434,6 +447,7 @@ def edit_venue(category_key, venue_key):
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/delete',
             methods=['GET','POST'])
 def delete_venue(category_key, venue_key):
+    '''Deletes a venue from the database'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
 
     if request.method == 'GET':
@@ -456,12 +470,15 @@ def delete_venue(category_key, venue_key):
 
 @app.route('/json')
 def show_catalog_json():
+    '''Sends a JSON-formatted response containing data about all categories
+    in the database'''
     categories = session.query(Category).all()
     return jsonify([i.serialize for i in categories])
 
 
 @app.route('/', methods=['GET','POST'])
 def show_catalog():
+    '''Renders main page'''
     if request.method == 'POST':
         return redirect(url_for('search'), query=request.form['query'],
                location=request.form['location'])
@@ -480,6 +497,9 @@ def show_catalog():
 
 @app.route('/search/json')
 def search_json():
+    '''Makes calls with user input to Google Geocode and Foursquare APIs to
+    retrieve a list of data about user-requested venues, then sends the data
+    as a JSON-formatted response'''
     if request.args.get('offset') is None:
         offset = 0
     else:
@@ -502,6 +522,9 @@ def search_json():
 
 @app.route('/search')
 def search():
+    '''Makes calls with user input to Google Geocode and Foursquare APIs to
+    retrieve a list of data about user-requested venues, then renders the
+    search results template'''
     if request.args.get('offset') is None:
         offset = 0
     else:
@@ -518,12 +541,16 @@ def search():
 
 @app.route('/category/<int:category_key>/json')
 def show_venues_json(category_key):
+    '''Sends a JSON-formatted response containing venue data for a particular
+    category'''
     venues = session.query(Venue).filter_by(category_key=category_key).all()
     return jsonify([i.serialize for i in venues])
 
 
 @app.route('/category/<int:category_key>')
 def show_venues(category_key):
+    '''Renders the venues.html template which displays the list of venues
+    in the database for a particular category'''
     categories = session.query(Category).order_by(asc(Category.name))
     venues = session.query(Venue).filter_by(category_key=category_key).order_by(
              asc(Venue.name))
@@ -532,12 +559,16 @@ def show_venues(category_key):
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/json')
 def show_info_json(category_key, venue_key):
+    '''Sends a JSON-formatted response with all available information about
+    a particular venue in the database'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
     return jsonify(venue.serialize)
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>')
 def show_info(category_key, venue_key):
+    '''Renders the info.html template which displays all available information
+    about a particular venue in the database'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
     return render_template('info.html', venue=venue)
 
