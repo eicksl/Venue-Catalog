@@ -24,7 +24,6 @@ class Category(Base):
     key = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
     venues = relationship('Venue', back_populates='category')
-    #activity = relationship('Activity', back_populates='categories')
 
     @property
     def serialize(self):
@@ -48,7 +47,6 @@ class Venue(Base):
     category = relationship('Category', back_populates='venues')
     user_key = Column(Integer, ForeignKey('user.key'), nullable=False)
     user = relationship('User', back_populates='venues')
-    #activity = relationship('Activity', back_populates='venues')
 
 
     @property
@@ -70,13 +68,9 @@ class Activity(Base):
     key = Column(Integer, primary_key=True)
     user_name = Column(String(50), nullable=False)
     action = Column(String(10), nullable=False)
-    venue_key = Column(Integer, nullable=True)
-    #venue_key = Column(Integer, ForeignKey('venue.key'))
-    #venues = relationship('Venue', back_populates='activity')
+    venue_key = Column(Integer)
     venue_name = Column(String(250), nullable=False)
-    category_key = Column(Integer, nullable=True)
-    #category_key = Column(Integer, ForeignKey('category.key'))
-    #categories = relationship('Category', back_populates='activity')
+    category_key = Column(Integer)
     datetime = Column(DateTime, nullable=False)
 
 

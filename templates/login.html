@@ -34,7 +34,6 @@ data-width='240'>
         data: {
           token: FB.getAccessToken(),
           fb_id: FB.getUserID(),
-          state: '{{state}}',
           csrf_token: '{{get_csrf_token()}}'
         },
         success: function(result) {
@@ -52,7 +51,6 @@ data-width='240'>
         url: '/gconnect',
         data: {
           code: authResult['code'],
-          state: '{{state}}',
           csrf_token: '{{get_csrf_token()}}'
         },
         success: function(result) {

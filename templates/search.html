@@ -36,6 +36,7 @@
                     name='venue' value='{{venue|tojson}}'>
               SAVE
             </button>
+            <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
           </form>
         {% else %}
           <p>SAVED!</p>

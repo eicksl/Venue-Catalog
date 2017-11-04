@@ -41,11 +41,6 @@ def get_random_string():
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     '''Exchanges short term token for long term one, then logs in the user'''
-    if request.form['state'] != login_session['state']:
-        error_msg = 'Session state string mismatch'
-        flash(error_msg)
-        return make_response(error_msg, 401)
-
     short_term_token = request.form['token']
     app_id = json.loads(open(
         'fb_client_secrets.json', 'r').read())['web']['app_id']
@@ -106,11 +101,6 @@ def fbconnect():
 def gconnect():
     '''Uses oauth2client library to exchange the authorization code for an
     access token, then logs in the user'''
-    if request.form['state'] != login_session['state']:
-        error_msg = 'Session state string mismatch'
-        flash(error_msg)
-        return make_response(error_msg, 401)
-
     try:
         auth_code = request.form['code']
         flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
@@ -173,7 +163,7 @@ def gconnect():
 
 @app.route('/disconnect')
 def disconnect():
-    '''Deletes session data for the user, effectively revoking permissions'''
+    '''Deletes session data for the user, revoking permissions in effect'''
     try:
         del login_session['user_key']
         del login_session['token']
@@ -382,9 +372,8 @@ def new_activity(venue, action):
 
 @app.route('/login')
 def show_login():
-    '''Renders login page view and passes a state string'''
-    login_session['state'] = get_random_string()
-    return render_template('login.html', state=login_session['state'])
+    '''Renders login page view'''
+    return render_template('login.html')
 
 
 @app.route('/add', methods=['POST'])
@@ -654,6 +643,8 @@ def show_info(category_key, venue_key):
 
 @app.before_request
 def csrf_protect():
+    '''Checks that the CSRF token from the form matches the one in the Flask
+    session'''
     if request.method == 'POST':
         token = login_session.pop('csrf_token', None)
         if token is None or token != request.form.get('csrf_token'):
@@ -661,6 +652,8 @@ def csrf_protect():
 
 
 def get_csrf_token():
+    '''Returns the CSRF token in the Flask session. If one is not yet in the
+    session then it is first generated and then returned.'''
     if 'csrf_token' not in login_session:
         login_session['csrf_token'] = get_random_string()
     return login_session['csrf_token']
