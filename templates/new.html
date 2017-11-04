@@ -15,9 +15,9 @@
               value='{{venue[index]}}'
           {% endif %}
         {% endblock %}>
-
     {% endfor %}
     <input type='submit' value='Submit'>
+    <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
   </form>
 
 {#

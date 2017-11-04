@@ -3,7 +3,7 @@
 {% block title %} Venue Catalog {% endblock %}
 {% block content %}
 
-  {% if username %}
+  {% if session.user_key %}
     {{display_logout()}}
     <br><br><br>
   {% else %}
@@ -27,10 +27,27 @@
   <br><br><br><br><br>
 
   {% for category in categories %}
-    <a class='categories' href="{{url_for('show_venues',
-          category_key=category.key)}}">
-      <p> {{category.name}} </p>
-    </a>
+    <p>
+      <a class='categories' href="{{url_for('show_venues',
+            category_key=category.key)}}">
+        {{category.name}}
+      </a>
+    </p>
+  {% endfor %}
+
+  <br><br><br><br><br>
+
+  {% for action in activity %}
+    <p>
+      {{action.user_name~' '~action.action~' '}}
+      {% if action.category_key and action.venue_key %}
+        <a href="{{url_for('show_info', category_key=action.category_key,
+                venue_key=action.venue_key)}}">{{action.venue_name}}</a>
+      {% else %}
+        {{action.venue_name}}
+      {% endif %}
+      {{' '~f_datetime[loop.index0]}}
+    </p>
   {% endfor %}
 
 {% endblock %}

@@ -5,6 +5,7 @@
   <p>Proceed?</p>
   <form action='' method='POST'>
     <button type='submit'> YES </button>
+    <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
   </form>
 
   <br><br>

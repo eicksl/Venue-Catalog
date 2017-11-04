@@ -11,15 +11,38 @@
 {% endmacro %}
 
 {% macro display_logout() %}
-  <div hidden class='g-signin2' data-onsuccess='onSignIn'></div>
+  <div class='g-signin2' data-onsuccess='onSignIn'></div>
   <button id='logout' onclick='signOut();'> Logout </button>
+
+  <div hidden class='fb-login-button' data-width='30' data-max-rows='1'
+       data-size='large' data-button-type='login_with' data-show-faces='false'
+       data-auto-logout-link='false' data-use-continue-as='false'
+       scope='public_profile,email' onlogin='sendFacebookToken();'></div>
+
+       <style>
+         .g-signin2 {display: none}
+         .fb-login-button {display: none}
+       </style>
+
   <script>
     function signOut() {
       var auth = gapi.auth2.getAuthInstance();
-      auth.signOut();
+      if (auth.isSignedIn.get()) {
+        auth.signOut();
+        callDisconnect();
+      } else {
+        FB.getLoginStatus(function(response) {
+          if (response.status === 'connected') {
+            FB.logout();
+            callDisconnect();
+          }
+        });
+      }
+    }
+    function callDisconnect() {
       $.ajax({
         type: 'GET',
-        url: '/gdisconnect',
+        url: '/disconnect',
         success: function(result) {
           $('#logout').replaceWith('<p>Redirecting...</p>')
           console.log(result);

@@ -29,15 +29,17 @@
         </div>
       </div>
 
-      {% if not venue['in_db'] %}
-        <form action="{{url_for('add_venue', venue=venue)}}" method='POST'>
-          <button id="{{'venue-num'~loop.index|string}}" class='save-btn'
-                  name='venue' value='{{venue|tojson}}'>
-            SAVE
-          </button>
-        </form>
-      {% else %}
-        <p>SAVED!</p>
+      {% if session.user_key %}
+        {% if not venue['in_db'] %}
+          <form action="{{url_for('add_venue', venue=venue)}}" method='POST'>
+            <button id="{{'venue-num'~loop.index|string}}" class='save-btn'
+                    name='venue' value='{{venue|tojson}}'>
+              SAVE
+            </button>
+          </form>
+        {% else %}
+          <p>SAVED!</p>
+        {% endif %}
       {% endif %}
 
     {% endif %}

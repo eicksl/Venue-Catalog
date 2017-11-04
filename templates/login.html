@@ -34,10 +34,15 @@ data-width='240'>
         data: {
           token: FB.getAccessToken(),
           fb_id: FB.getUserID(),
-          state: '{{state}}'
+          state: '{{state}}',
+          csrf_token: '{{get_csrf_token()}}'
         },
         success: function(result) {
+          $('.fb-login-button').replaceWith('<p>Redirecting...</p>');
           console.log(result);
+          setTimeout(function() {
+            window.location.href = '/';
+          }, 2000);
         }
       });
     }
@@ -45,9 +50,13 @@ data-width='240'>
       $.ajax({
         type: 'POST',
         url: '/gconnect',
-        data: {code: authResult['code'], state: '{{state}}'},
+        data: {
+          code: authResult['code'],
+          state: '{{state}}',
+          csrf_token: '{{get_csrf_token()}}'
+        },
         success: function(result) {
-          $('.g-signin2').replaceWith('<p>Redirecting...</p>')
+          $('.g-signin2').replaceWith('<p>Redirecting...</p>');
           console.log(result);
           setTimeout(function() {
             window.location.href = '/';
@@ -62,12 +71,11 @@ data-width='240'>
         callDisconnect();
       } else {
         FB.getLoginStatus(function(response) {
-          connected = response.status === 'connected';
+          if (response.status === 'connected') {
+            FB.logout();
+            callDisconnect();
+          }
         });
-        if (connected) {
-          FB.logout();
-          callDisconnect();
-        }
       }
     }
     function callDisconnect() {
@@ -83,9 +91,13 @@ data-width='240'>
         }
       });
     }
-    // Because the FB login button load speed is considerably slower,
-    // a timeout is used to make both buttons display synchronously
     setTimeout(function() {
+      var auth = gapi.auth2.getAuthInstance();
+      if (auth.isSignedIn.get() && !'{{session.user_key}}') {
+        auth.signOut();
+      }
+      // Because the FB login button load speed is considerably slower,
+      // a timeout is used to make both buttons display synchronously
       $('.g-signin2').show();
       $('.fb-login-button').show();
     }, 600);
