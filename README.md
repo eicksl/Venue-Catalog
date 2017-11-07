@@ -1,9 +1,9 @@
 # Venue Catalog
 
 A Flask/SQLalchemy application that uses Google Geocode and Foursquare APIs
-to search for venues around any given location. CRUD allow users with correct
-permissions to save search results to the database, modify or delete existing
-content, or add their own custom content.
+to search for venues around any given location. CRUD operations
+allow users with correct permissions to save search results to the database,
+modify or delete existing content, or add their own custom content.
 
 It is recommended to use the virtual machine configuration provided below.
 Download Vagrant from [vagrantup.com](https://www.vagrantup.com/downloads.html),

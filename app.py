@@ -575,10 +575,13 @@ def show_catalog():
 
     categories = session.query(Category).order_by(asc(Category.name))
     activity = session.query(Activity).order_by(desc(Activity.key))
+    if activity.count() == 0:
+        activity = None
     f_datetime = []
-    for action in activity:
-        dt_str = action.datetime.strftime('%m-%d-%y, %X')[:-3] + ' UTC'
-        f_datetime.append(dt_str)
+    if activity:
+        for action in activity:
+            dt_str = action.datetime.strftime('%m-%d-%y, %X')[:-3] + ' UTC'
+            f_datetime.append(dt_str)
 
     return render_template('catalog.html', categories=categories,
                            activity=activity, f_datetime=f_datetime)
@@ -667,9 +670,12 @@ def show_info(category_key, venue_key):
 @app.before_request
 def csrf_protect():
     '''Checks that the CSRF token from the form matches the one in the Flask
-    session. The token is also removed from the session.'''
+    session.'''
     if request.method == 'POST':
-        token = login_session.pop('csrf_token', None)
+        if 'csrf_token' in login_session:
+            token = login_session['csrf_token']
+        else:
+            token = None
         if token is None or token != request.form.get('csrf_token'):
             abort(400)
 
