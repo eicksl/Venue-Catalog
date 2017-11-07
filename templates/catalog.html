@@ -41,7 +41,9 @@
   <a href="{{url_for('add_custom_venue')}}"
      id='new-venue-btn' class='btn btn-success' role='button'>New Venue</a>
 
-  {{display_flash()}}
+  <div id='catalog-flash'>
+    {{display_flash()}}
+  </div>
 
   <div class='divider'></div>
 

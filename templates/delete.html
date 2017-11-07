@@ -2,21 +2,27 @@
 {% block title %} Delete Venue {% endblock %}
 {% block content %}
 
-  <p>Proceed?</p>
-  <form action='' method='POST'>
-    <button type='submit'> YES </button>
-    <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
-  </form>
+  <div id='delete-prompt'>
+    <h4>
+      You are about to delete
+      <a href="{{url_for('show_info', category_key=venue.category_key,
+              venue_key=venue.key)}}">
+        {{venue.name}}
+      </a>
+    </h4>
 
-  <br><br>
+    <div class='divider'></div>
 
-  <form action="{{url_for('show_info', category_key=venue.category_key,
-        venue_key=venue.key)}}" method='GET'>
-    <button type='submit'> CANCEL </button>
-  </form>
+    <div id='venue-del-btn'>
+      <form action='' method='POST'>
+        <button type='submit' class='btn btn-primary'>Confirm</button>
+        <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
+      </form>
+    </div>
 
-  <br><br><br><br><br><br>
-
-  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
+    <a href="{{url_for('show_info', category_key=venue.category_key,
+       venue_key=venue.key)}}" id='del-cancel-btn' class='btn btn-secondary'
+       role='button'>Cancel</a>
+  </div>
 
 {% endblock %}

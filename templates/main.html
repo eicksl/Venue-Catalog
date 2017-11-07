@@ -22,9 +22,8 @@
       <div class='container'>
       <a class='navbar-brand' href="{{url_for('show_catalog')}}"> Venue Catalog </a>
       {% if not session.user_key %}
-        <form action="{{url_for('show_login')}}" method='GET'>
-          <button type='submit' class='btn btn-info'>Login</button>
-        </form>
+        <a href="{{url_for('show_login')}}" class='btn btn-info'
+           role='button'>Login</a>
       {% else %}
         <p id='welcome'><em>Welcome,</em><br>{{session.user_name}} <i class='em em-smiley'></i></p>
         {{display_logout()}}

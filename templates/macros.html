@@ -44,7 +44,6 @@
         type: 'GET',
         url: '/disconnect',
         success: function(result) {
-          //$('#logout').replaceWith('<p>Redirecting...</p>')
           console.log(result);
           setTimeout(function() {
             window.location.href = '/';

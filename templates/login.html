@@ -2,29 +2,29 @@
 {% block title %} Venue Catalog Login {% endblock %}
 {% block content %}
 
-<div class='g-signin2'
-data-scope='openid profile email'
-data-clientid='441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps.googleusercontent.com'
-data-accesstype='offline'
-data-onsuccess='onSignIn'
-data-width='240'>
-</div>
+  <div id='login-buttons'>
 
-  <br><br><br>
+    <div class='g-signin2'
+         data-scope='openid profile email'
+         data-clientid='441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps.googleusercontent.com'
+         data-accesstype='offline'
+         data-onsuccess='onSignIn'
+         data-width='240'>
+    </div>
 
-  <div class='fb-login-button' data-width='30' data-max-rows='1'
-       data-size='large' data-button-type='login_with' data-show-faces='false'
-       data-auto-logout-link='false' data-use-continue-as='false'
-       scope='public_profile,email' onlogin='sendFacebookToken();'></div>
+    <br><br>
 
-  <style>
-    .g-signin2 {display: none}
-    .fb-login-button {display: none}
-  </style>
+    <div class='fb-login-button' data-width='30' data-max-rows='1'
+         data-size='large' data-button-type='login_with' data-show-faces='false'
+         data-auto-logout-link='false' data-use-continue-as='false'
+         scope='public_profile,email' onlogin='sendFacebookToken();'></div>
 
-  <br><br><br>
+    <style>
+      .g-signin2 {display: none}
+      .fb-login-button {display: none}
+    </style>
 
-  <button id='logout' onclick='signOut();'> Logout </button>
+  </div>
 
   <script>
     function sendFacebookToken() {
@@ -55,33 +55,6 @@ data-width='240'>
         },
         success: function(result) {
           $('.g-signin2').replaceWith('<p>Redirecting...</p>');
-          console.log(result);
-          setTimeout(function() {
-            window.location.href = '/';
-          }, 2000);
-        }
-      });
-    }
-    function signOut() {
-      var auth = gapi.auth2.getAuthInstance();
-      if (auth.isSignedIn.get()) {
-        auth.signOut();
-        callDisconnect();
-      } else {
-        FB.getLoginStatus(function(response) {
-          if (response.status === 'connected') {
-            FB.logout();
-            callDisconnect();
-          }
-        });
-      }
-    }
-    function callDisconnect() {
-      $.ajax({
-        type: 'GET',
-        url: '/disconnect',
-        success: function(result) {
-          $('#logout').replaceWith('<p>Redirecting...</p>')
           console.log(result);
           setTimeout(function() {
             window.location.href = '/';

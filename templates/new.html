@@ -3,27 +3,9 @@
 {% block title %} New Venue {% endblock %}
 {% block content %}
 
-{#
-  <form action='' method='POST' enctype='multipart/form-data'>
-    <p>Image</p>
-    <input type='file' name='image'>
-    {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
-    {% for index in info %}
-      <p> {{index|capitalize}} </p>
-      <input type='text' size='30' name='{{index}}'
-        {% block value scoped %}
-          {% if venue|default(false) and venue[index] %}
-              value='{{venue[index]}}'
-          {% endif %}
-        {% endblock %}>
-    {% endfor %}
-    <input type='submit' value='Submit'>
-    <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
-  </form>
-#}
+  <div class='divider'></div>
 
-
-  <form action='' method='POST' enctype='multipart/form-data'>
+  <form id='venue-form' action='' method='POST' enctype='multipart/form-data'>
 
     <div class='form-group'>
       <input hidden type='file' name='image' class='file'>
@@ -35,29 +17,28 @@
       </div>
     </div>
 
-{#
-    <p>Image</p>
-    <label class='custom-file'>
-      <input type='file' name='image' id='file2' class='custom-file-input'
-             onchange="$('#upload-file-info').html(this.files[0].name)">
-      <span class='custom-file-control'></span>
-    </label>
-    <span class='label label-info' id="upload-file-info"></span>
-#}
-
-
     {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
     {% for index in info %}
-      <p> {{index|capitalize}} </p>
-      <input type='text' size='30' name='{{index}}'
+
+      <div class='form-group'>
+        <label class='input-fields' for='location'>{{index|capitalize}}</label>
+        <input class='form-control form-control-md' type='text'
+               name='{{index}}'
+
         {% block value scoped %}
           {% if venue|default(false) and venue[index] %}
               value='{{venue[index]}}'
           {% endif %}
-        {% endblock %}>
+        {% endblock %} >
+
+      </div>
+
     {% endfor %}
-    <input type='submit' value='Submit'>
+
+    <button id='venue-form-btn' type='submit' class='btn btn-primary'>Submit</button>
+    <div id='venue-flash'>{{display_flash()}}</div>
     <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
+
   </form>
 
   <script>
@@ -72,20 +53,5 @@
       $(this).parent().find('.form-control').val($(this).val().replace(/C:\\fakepath\\/i, ''));
     });
   </script>
-
-
-
-{#
-  <p>Image</p>
-  <form action="{{url_for('handle_image_upload')}}" method='POST'
-        enctype='multipart/form-data'>
-    <input type='file' name='file'>
-    <input type='submit' value='Upload'>
-  </form>
-#}
-
-  <br><br><br>
-
-{{display_flash()}}
 
 {% endblock %}

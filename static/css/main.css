@@ -1,3 +1,21 @@
+#login-buttons {
+  padding-top: 140px;
+  transform: translateX(25%);
+}
+#venue-form {
+  transform: translateX(20%);
+}
+#delete-prompt {
+  padding-top: 140px;
+  transform: translateX(25%);
+}
+#venue-del-btn {
+  display: inline-block;
+  transform: translateX(50%);
+}
+#del-cancel-btn {
+  transform: translateX(75%);
+}
 #content {
   margin-top: 160px;
 }
@@ -59,7 +77,10 @@ nav.navbar .btn {
 #new-venue-form {
   display: inline-block;
 }
-.flash-msg {
+#venue-flash, .venue-form-btn {
+  display: inline-block;
+}
+#catalog-flash {
   display: inline-block;
   transform: translateY(40%);
 }
@@ -106,6 +127,11 @@ nav.navbar .btn {
   font-weight: bold;
 }
 
+@media (max-width: 768px) {
+  #venue-form {
+    transform: translateX(0);
+  }
+}
 @media (min-width: 768px) {
   #content {
     margin-top: 120px;

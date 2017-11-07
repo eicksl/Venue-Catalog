@@ -562,8 +562,6 @@ def show_catalog_json():
 @app.route('/', methods=['GET','POST'])
 def show_catalog():
     '''Renders main page'''
-    login_session['user_key'] = 1
-    login_session['user_name'] = 'Spencer'
     if request.method == 'POST':
         return redirect(url_for('search'), query=request.form['query'],
                location=request.form['location'])
