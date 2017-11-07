@@ -13,8 +13,8 @@ class User(Base):
     key = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     email = Column(String(250), nullable=False)
-    sub = Column(String(250)) # Unique google account identifier
-    fb_id = Column(String(250)) # Unique facebook account identifier
+    sub = Column(String(250))  # Unique google account identifier
+    fb_id = Column(String(250))  # Unique facebook account identifier
     venues = relationship('Venue', back_populates='user')
 
 
@@ -48,7 +48,6 @@ class Venue(Base):
     user_key = Column(Integer, ForeignKey('user.key'), nullable=False)
     user = relationship('User', back_populates='venues')
 
-
     @property
     def serialize(self):
         return {
@@ -72,7 +71,6 @@ class Activity(Base):
     venue_name = Column(String(250), nullable=False)
     category_key = Column(Integer)
     datetime = Column(DateTime, nullable=False)
-
 
     @property
     def serialize(self):

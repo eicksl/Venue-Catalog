@@ -1,15 +1,18 @@
 from flask import Flask, render_template, url_for, flash, abort
 from flask import request, make_response, redirect, jsonify
 from flask import session as login_session
-from flask_login import LoginManager, current_user, login_user, logout_user
-#from werkzeug.utils import secure_filename
 from sqlalchemy import create_engine, inspect, asc, desc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from datetime import datetime
 from models import Base, User, Category, Venue, Activity
 from exceptions import UserKeyNotFound
-import json, requests, os, random, string, httplib2
+import json
+import requests
+import os
+import random
+import string
+import httplib2
 
 
 G_OAUTH_ID = ('441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps'
@@ -18,10 +21,10 @@ UPLOAD_DIR = 'static/img/uploads/'
 ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
 CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
-RECENTS = 10 # A limit set on the number of rows in the Activity model, which
+RECENTS = 10  # A limit set on the number of rows in the Activity model, which
 # is also the number of entries shown on the main page for recent activity.
 LIMIT = 11   # LIMIT-1 results are shown on the search page. An extra item
-             # is used to indicate whether there are more results to display.
+# is used to indicate whether there are more results to display.
 
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
@@ -35,7 +38,7 @@ def get_random_string():
     '''Generates a random 32-character string comprised of uppercase ASCII
     characters and digits'''
     return ''.join(random.choice(string.ascii_uppercase + string.digits)
-           for x in range(32))
+                   for x in range(32))
 
 
 @app.route('/fbconnect', methods=['POST'])
@@ -47,8 +50,9 @@ def fbconnect():
     app_secret = json.loads(open(
         'fb_client_secrets.json', 'r').read())['web']['app_secret']
     auth_url = ('https://graph.facebook.com/oauth/access_token?grant_type='
-        'fb_exchange_token&client_id={}&client_secret={}'
-        '&fb_exchange_token={}').format(app_id, app_secret, short_term_token)
+                'fb_exchange_token&client_id={}&client_secret={}'
+                '&fb_exchange_token={}').format(app_id, app_secret,
+                                                short_term_token)
 
     http = httplib2.Http()
     resp = http.request(auth_url, 'GET')
@@ -71,7 +75,7 @@ def fbconnect():
     login_session['provider'] = 'facebook'
     login_session.permanent = True
 
-    fb_id = request.form['fb_id'] # Unique facebook account identifier
+    fb_id = request.form['fb_id']  # Unique facebook account identifier
     email = info['email']
     fb_id_in_db = session.query(User.fb_id).filter_by(fb_id=fb_id).scalar()
     email_in_db = session.query(User.email).filter_by(email=email).scalar()
@@ -138,7 +142,7 @@ def gconnect():
     login_session['provider'] = 'google'
     login_session.permanent = True
 
-    sub = data['sub'] # Unique facebook account identifier
+    sub = data['sub']  # Unique facebook account identifier
     email = info['email']
     sub_in_db = session.query(User.sub).filter_by(sub=sub).scalar()
     email_in_db = session.query(User.email).filter_by(email=email).scalar()
@@ -265,7 +269,7 @@ def get_venues(query, location, offset=0):
         return None
 
     for index in range(num_of_venues):
-        if index == LIMIT-1:
+        if index == LIMIT - 1:
             results.append('LIMIT')   # Template displays URL to more results
             break                     # when this index exists
         info = {}
@@ -287,13 +291,13 @@ def get_venues(query, location, offset=0):
         info['address'] = '\n'.join(address)
         try:
             info['description'] = (data['response']['groups'][0]
-                                        ['items'][index]['tips'][0]['text'])
+                                   ['items'][index]['tips'][0]['text'])
         except (KeyError, IndexError):
             pass
         info['image'] = get_image(venue['id'])
 
         q = session.query(Venue.api_id).filter_by(
-                    api_id=info['api_id']).scalar()
+            api_id=info['api_id']).scalar()
         if q is None:
             info['in_db'] = False
         else:
@@ -322,7 +326,7 @@ def validate_form():
     image_is_valid = valid_image(image)
 
     if (not request.form['category'] or not request.form['name']
-    or not image_is_valid):
+            or not image_is_valid):
         if not request.form['category'] or not request.form['name']:
             flash('Category and Name fields are required.')
         if not image_is_valid:
@@ -333,7 +337,7 @@ def validate_form():
             if request.form[index]:
                 venue[index] = request.form[index]
         if not venue:
-            return True # All fields are empty. Redirect to the form's URI.
+            return True  # All fields are empty. Redirect to the form's URI.
         return venue
     else:
         return None
@@ -363,7 +367,8 @@ def new_activity(venue, action):
         raise UserKeyNotFound()
 
     if session.query(Activity).count() >= RECENTS:
-        oldest = session.query(Activity).order_by(asc(Activity.datetime)).first()
+        oldest = session.query(Activity).order_by(
+            asc(Activity.datetime)).first()
         session.delete(oldest)
         session.commit()
 
@@ -371,10 +376,10 @@ def new_activity(venue, action):
     dt = datetime.utcnow()
 
     activity = Activity(
-        user_name = user_name,
-        action = action,
-        venue_name = venue.name,
-        datetime = dt
+        user_name=user_name,
+        action=action,
+        venue_name=venue.name,
+        datetime=dt
     )
     if action != 'deleted':
         activity.category_key = venue.category_key
@@ -417,7 +422,7 @@ def add_venue():
     return redirect(url_for('show_catalog'))
 
 
-@app.route('/new', methods=['GET','POST'])
+@app.route('/new', methods=['GET', 'POST'])
 def add_custom_venue():
     '''Adds a new user-defined venue to the database'''
     if 'user_key' not in login_session:
@@ -439,12 +444,13 @@ def add_custom_venue():
     q = session.query(Category.key).filter_by(name=category).scalar()
     user_key = login_session['user_key']
     new_venue = Venue(category_key=q, name=name, phone=request.form['phone'],
-                address=request.form['address'], user_key=user_key,
-                description=request.form['description'])
+                      address=request.form['address'], user_key=user_key,
+                      description=request.form['description'])
     session.add(new_venue)
     session.commit()
 
-    new_venue.image = handle_image_upload(request.files['image'], new_venue.key)
+    new_venue.image = handle_image_upload(
+        request.files['image'], new_venue.key)
     session.add(new_venue)
     session.commit()
     new_activity(new_venue, 'added')
@@ -458,14 +464,14 @@ def authorized(venue_user_key):
     '''Returns True if the user key in the flask session matches the venue's
     user key, else returns False'''
     if ('user_key' in login_session
-    and login_session['user_key'] == venue_user_key):
+            and login_session['user_key'] == venue_user_key):
         return True
     else:
         return False
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/edit',
-            methods=['GET','POST'])
+           methods=['GET', 'POST'])
 def edit_venue(category_key, venue_key):
     '''Edits an existing venue in the database based on user input'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
@@ -473,11 +479,11 @@ def edit_venue(category_key, venue_key):
         return make_response('Unauthorized User', 401)
 
     old_category_str = session.query(Category).filter_by(
-                       key=category_key).one().name
+        key=category_key).one().name
 
     if request.method == 'GET':
         return render_template('edit.html', venue=venue,
-               category_name=old_category_str)
+                               category_name=old_category_str)
 
     form_values = validate_form()
     if form_values:
@@ -489,9 +495,10 @@ def edit_venue(category_key, venue_key):
     # Delete and replace the category object if the category was edited AND
     # the venue we are editing is the only one in the category
     if (new_category_str != old_category_str
-    and session.query(Venue).filter_by(category_key=category_key).count() == 1):
+            and session.query(Venue).filter_by(
+            category_key=category_key).count() == 1):
         old_category_obj = session.query(Category).filter_by(
-                           key=category_key).one()
+            key=category_key).one()
         session.delete(old_category_obj)
         new_category_obj = Category(name=new_category_str)
         session.add(new_category_obj)
@@ -515,7 +522,7 @@ def edit_venue(category_key, venue_key):
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/delete',
-            methods=['GET','POST'])
+           methods=['GET', 'POST'])
 def delete_venue(category_key, venue_key):
     '''Deletes a venue from the database'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
@@ -529,7 +536,7 @@ def delete_venue(category_key, venue_key):
 
     if session.query(Venue).filter_by(category_key=category_key).count() == 1:
         old_category_obj = session.query(Category).filter_by(
-                           key=category_key).one()
+            key=category_key).one()
         session.delete(old_category_obj)
 
     if venue.image and venue.image[:8] != 'https://':
@@ -559,12 +566,12 @@ def show_catalog_json():
     return jsonify([i.serialize for i in categories])
 
 
-@app.route('/', methods=['GET','POST'])
+@app.route('/', methods=['GET', 'POST'])
 def show_catalog():
     '''Renders main page'''
     if request.method == 'POST':
         return redirect(url_for('search'), query=request.form['query'],
-               location=request.form['location'])
+                        location=request.form['location'])
 
     categories = session.query(Category).order_by(asc(Category.name))
     activity = session.query(Activity).order_by(desc(Activity.key))
@@ -574,7 +581,7 @@ def show_catalog():
         f_datetime.append(dt_str)
 
     return render_template('catalog.html', categories=categories,
-           activity=activity, f_datetime=f_datetime)
+                           activity=activity, f_datetime=f_datetime)
 
 
 @app.route('/search/json')
@@ -588,14 +595,14 @@ def search_json():
         offset = request.args.get('offset')
 
     data = get_venues(request.args.get('query'), request.args.get('location'),
-           offset)
+                      offset)
     if data is None:
         error_msg = 'Either an error occurred while processing the request or \
                      there are no results to display for the given parameters.'
         return make_response(error_msg, 404)
 
     try:
-        del data[LIMIT-1]
+        del data[LIMIT - 1]
     except IndexError:
         pass
 
@@ -613,12 +620,13 @@ def search():
         offset = request.args.get('offset')
 
     data = get_venues(request.args.get('query'), request.args.get('location'),
-           offset)
+                      offset)
     if data is None:
         return redirect(url_for('show_catalog'))
 
-    return render_template('search.html', data=data, offset=offset, LIMIT=LIMIT,
-        location=request.args.get('location'), query=request.args.get('query'))
+    return render_template('search.html', data=data, offset=offset,
+                           LIMIT=LIMIT, location=request.args.get('location'),
+                           query=request.args.get('query'))
 
 
 @app.route('/category/<int:category_key>/json')
@@ -634,10 +642,10 @@ def show_venues(category_key):
     '''Renders the venues.html template which displays the list of venues
     in the database for a particular category'''
     categories = session.query(Category).order_by(asc(Category.name))
-    venues = session.query(Venue).filter_by(category_key=category_key).order_by(
-             asc(Venue.name))
+    venues = session.query(Venue).filter_by(
+             category_key=category_key).order_by(asc(Venue.name))
     return render_template('venues.html', categories=categories, venues=venues,
-           category_key=category_key)
+                           category_key=category_key)
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/json')
