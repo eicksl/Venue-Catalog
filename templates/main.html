@@ -1,17 +1,41 @@
-<!DOCTYPE html>
+{% from 'macros.html' import display_logout %}
+<!doctype html>
 <html lang='en'>
   <head>
     <title>
       {% block title %}{% endblock %}
     </title>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
     <meta name='google-signin-scope' content='profile email'>
     <meta name='google-signin-client_id' content='441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps.googleusercontent.com'>
+    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css' integrity='sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb' crossorigin='anonymous'>
+    <link rel='stylesheet' href='https://afeld.github.io/emoji-css/emoji.css'>
     <link rel='stylesheet' type='text/css'
           href="{{url_for('static', filename='css/main.css')}}">
     <script src='https://apis.google.com/js/platform.js' async defer></script>
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
   </head>
   <body>
+
+    <nav class='navbar navbar-dark fixed-top bg-dark'>
+      <div class='container'>
+      <a class='navbar-brand' href="{{url_for('show_catalog')}}"> Venue Catalog </a>
+      {% if not session.user_key %}
+        <form action="{{url_for('show_login')}}" method='GET'>
+          <button type='submit' class='btn btn-info'>Login</button>
+        </form>
+      {% else %}
+        <p id='welcome'><em>Welcome,</em><br>{{session.user_name}} <i class='em em-smiley'></i></p>
+        {{display_logout()}}
+      {% endif %}
+      </div>
+    </nav>
+
+    <div id='content' class='container'>
+      {% block content %}{% endblock %}
+    </div>
+
     <script>
       window.fbAsyncInit = function() {
         FB.init({
@@ -31,8 +55,6 @@
          fjs.parentNode.insertBefore(js, fjs);
        }(document, 'script', 'facebook-jssdk'));
     </script>
-    <div class='container'>
-      {% block content %}{% endblock %}
-    </div>
+
   </body>
 </html>

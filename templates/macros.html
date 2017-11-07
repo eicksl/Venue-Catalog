@@ -1,7 +1,7 @@
 {% macro display_flash() %}
   {% with messages = get_flashed_messages() %}
     {% if messages %}
-      <ul>
+      <ul class='flash-msg'>
       {% for msg in messages %}
         <li><strong> {{msg}} </strong></li>
       {% endfor %}
@@ -12,7 +12,7 @@
 
 {% macro display_logout() %}
   <div class='g-signin2' data-onsuccess='onSignIn'></div>
-  <button id='logout' onclick='signOut();'> Logout </button>
+  <button type='button' class='btn btn-secondary' onclick='signOut();'>Logout</button>
 
   <div hidden class='fb-login-button' data-width='30' data-max-rows='1'
        data-size='large' data-button-type='login_with' data-show-faces='false'
@@ -44,7 +44,7 @@
         type: 'GET',
         url: '/disconnect',
         success: function(result) {
-          $('#logout').replaceWith('<p>Redirecting...</p>')
+          //$('#logout').replaceWith('<p>Redirecting...</p>')
           console.log(result);
           setTimeout(function() {
             window.location.href = '/';

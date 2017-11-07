@@ -2,12 +2,22 @@
 {% block title %} {{query}} - {{location}} {% endblock %}
 {% block content %}
 
-  <a href="{{url_for('show_catalog')}}"> MAIN </a>
-  <h1> Displaying results for {{query}} in/near {{location}} </h1>
+  <h1 id='search-results'>
+    Displaying results for
+    <span class='search-results-for'>{{query}}</span>
+    in/near
+    <span class='search-results-for'>{{location}}</span>
+  </h1>
 
   {% for venue in data %}
     {% if venue != 'LIMIT' %}
-      <div class='venues'>
+
+      {% if loop.index % 2 == 1 %}
+      <div class='venues venues-odd'>
+      {% else %}
+      <div class='venues venues-even'>
+      {% endif %}
+
         <div class='images'>
           {% if venue['image'] %}
             <img src="{{venue['image']}}">
@@ -16,45 +26,50 @@
                                                alt='Placeholder Image'>
           {% endif %}
         </div>
-        <h2 class='names'> {{venue['name']}} </h2>
-        {% if venue['address'] %}
-          <pre class='addresses'> {{venue['address']}} </pre>
-        {% endif %}
-        {% if venue['phone'] %}
-          <pre class='phones'> {{venue['phone']}} </pre>
-        {% endif %}
-        {% if venue['description'] %}
-          <p class='description'> {{venue['description']}} </p>
-        {% endif %}
+
+        <div class='search-info'>
+
+          <h2 class='names'>{{venue['name']}}</h2>
+          {% if venue['address'] %}
+            <pre class='addresses'>{{venue['address']}}</pre>
+          {% endif %}
+          {% if venue['phone'] %}
+            <pre class='phones'>{{venue['phone']}}</pre>
+          {% endif %}
+
+          {% if venue['description'] %}
+            <p class='descriptions'>{{venue['description']}}</p>
+          {% endif %}
+
+          {% if session.user_key %}
+            {% if not venue['in_db'] %}
+              <form action="{{url_for('add_venue', venue=venue)}}" method='POST'>
+                <button id="{{'venue-num'~loop.index|string}}" class='btn btn-info'
+                        name='venue' value='{{venue|tojson}}'>
+                  SAVE
+                </button>
+                <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
+              </form>
+            {% else %}
+              <p><strong>SAVED</strong> <i class='em em-ballot_box_with_check'></i></p>
+            {% endif %}
+          {% endif %}
+
         </div>
       </div>
-
-      {% if session.user_key %}
-        {% if not venue['in_db'] %}
-          <form action="{{url_for('add_venue', venue=venue)}}" method='POST'>
-            <button id="{{'venue-num'~loop.index|string}}" class='save-btn'
-                    name='venue' value='{{venue|tojson}}'>
-              SAVE
-            </button>
-            <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
-          </form>
-        {% else %}
-          <p>SAVED!</p>
-        {% endif %}
-      {% endif %}
-
     {% endif %}
   {% endfor %}
 
-  <br><br><br><br><br>
+  <div class='search-nav'>
+    {% if offset|int != 0 %}
+      <a href="{{url_for('search', query=query, location=location, offset=offset|int-10)}}"
+         id='search-previous' class='btn btn-primary' role='button'>Previous</a>
+    {% endif %}
 
-  {% if offset|int != 0 %}
-    <a class='next' href="{{url_for('search', query=query, location=location,
-              offset=offset|int-10)}}"> PREVIOUS </a>
-  {% endif %}
-  {% if data[LIMIT-1] %}
-    <a class='next' href="{{url_for('search', query=query, location=location,
-              offset=offset|int+10)}}"> NEXT </a>
-  {% endif %}
+    {% if data[LIMIT-1] %}
+      <a href="{{url_for('search', query=query, location=location, offset=offset|int+10)}}"
+         id='search-next' class='btn btn-primary' role='button'>Next</a>
+    {% endif %}
+  </div>
 
 {% endblock %}

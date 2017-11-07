@@ -3,51 +3,74 @@
 {% block title %} Venue Catalog {% endblock %}
 {% block content %}
 
-  {% if session.user_key %}
-    {{display_logout()}}
-    <br><br><br>
-  {% else %}
-    <a href="{{url_for('show_login')}}"> Login </a>
-    <br><br><br>
-  {% endif %}
-
   <form action="{{url_for('search', location=location, query=query)}}"
         method='GET'>
-      <p>Location:</p>
-      <input type='text' size='30' name='location'>
-      <p>Query:</p>
-      <input type='text' size='30' name='query'>
-      <input type='submit' value='Search'>
+
+    <div class='form-row'>
+
+      <div class='col-4'>
+        <div class='form-group search-fields'>
+          <label class='input-fields' for='location'>Location</label>
+          <input class='form-control form-control-md' type='text'
+                 name='location'>
+          <small id='location-help' class='form-text text-muted'>
+            Enter the name of a city, an address, or a well-known area
+          </small>
+        </div>
+      </div>
+
+      <div class='col-4'>
+        <div class='form-group search-fields'>
+          <label class='input-fields' for='query'>Type of Venue</label>
+          <input class='form-control form-control-md' type='text'
+                 name='query'>
+          <small id='query-help' class='form-text text-muted'>
+            Enter some keywords such as 'cafe', 'indian food', or 'golf club'
+          </small>
+        </div>
+      </div>
+
+      <div id='search-btn' class='col'>
+        <button type='submit' class='btn btn-info'>Search Venues</button>
+      </div>
+
+    </div>
+
   </form>
 
-  </p><a href="{{url_for('add_custom_venue')}}"> NEW </a></p>
+  <a href="{{url_for('add_custom_venue')}}"
+     id='new-venue-btn' class='btn btn-success' role='button'>New Venue</a>
 
   {{display_flash()}}
 
-  <br><br><br><br><br>
+  <div class='divider'></div>
 
-  {% for category in categories %}
-    <p>
-      <a class='categories' href="{{url_for('show_venues',
-            category_key=category.key)}}">
-        {{category.name}}
+  <div id='catalog-categories' class='list-group'>
+    {% for category in categories %}
+      <a class='list-group-item list-group-item-action list-group-item-success'
+         href="{{url_for('show_venues', category_key=category.key)}}">
+        <strong>{{category.name}}</strong>
       </a>
-    </p>
-  {% endfor %}
+    {% endfor %}
+  </div>
 
-  <br><br><br><br><br>
-
-  {% for action in activity %}
-    <p>
-      {{action.user_name~' '~action.action~' '}}
-      {% if action.category_key and action.venue_key %}
-        <a href="{{url_for('show_info', category_key=action.category_key,
-                venue_key=action.venue_key)}}">{{action.venue_name}}</a>
-      {% else %}
-        {{action.venue_name}}
-      {% endif %}
-      {{' '~f_datetime[loop.index0]}}
-    </p>
-  {% endfor %}
+  {% if activity %}
+    <div class='jumbotron'>
+      <h2>Recent Activity</h2>
+      <hr>
+      {% for action in activity %}
+        <p>
+          {{action.user_name~' '~action.action~' '}}
+          {% if action.category_key and action.venue_key %}
+            <a href="{{url_for('show_info', category_key=action.category_key,
+                    venue_key=action.venue_key)}}">{{action.venue_name}}</a>
+          {% else %}
+            {{action.venue_name}}
+          {% endif %}
+          <em>{{' '~f_datetime[loop.index0]}}</em>
+        </p>
+      {% endfor %}
+    </div>
+  {% endif %}
 
 {% endblock %}

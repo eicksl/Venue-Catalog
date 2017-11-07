@@ -86,6 +86,7 @@ def fbconnect():
     if existing:
         flash('Welcome back, {}!'.format(existing.name))
         login_session['user_key'] = existing.key
+        login_session['user_name'] = existing.name
         return make_response('Login successful', 200)
 
     name = ' '.join(info['name'].split(' ')[:-1])
@@ -94,6 +95,7 @@ def fbconnect():
     session.commit()
     flash('Thanks for joining, {}!'.format(new_user.name))
     login_session['user_key'] = new_user.key
+    login_session['user_name'] = new_user.name
     return make_response('Registration successful', 200)
 
 
@@ -151,6 +153,7 @@ def gconnect():
     if existing:
         flash('Welcome back, {}!'.format(existing.name))
         login_session['user_key'] = existing.key
+        login_session['user_name'] = existing.name
         return make_response('Login successful', 200)
 
     new_user = User(name=info['given_name'], email=email, sub=sub)
@@ -158,6 +161,7 @@ def gconnect():
     session.commit()
     flash('Thanks for joining, {}!'.format(new_user.name))
     login_session['user_key'] = new_user.key
+    login_session['user_name'] = new_user.name
     return make_response('Registration successful', 200)
 
 
@@ -166,6 +170,7 @@ def disconnect():
     '''Deletes session data for the user, revoking permissions in effect'''
     try:
         del login_session['user_key']
+        del login_session['user_name']
         del login_session['token']
         del login_session['provider']
         return make_response('Logout successful', 200)
@@ -266,15 +271,18 @@ def get_venues(query, location, offset=0):
         info = {}
         venue = data['response']['groups'][0]['items'][index]['venue']
         info['api_id'] = venue['id']
-        info['category'] = venue['categories'][0]['pluralName']
         info['name'] = venue['name']
         try:
+            info['category'] = venue['categories'][0]['pluralName']
+        except (KeyError, IndexError):
+            info['category'] = 'Unknown'
+        try:
             info['phone'] = venue['contact']['formattedPhone']
-        except KeyError:
+        except (KeyError):
             pass
         try:
             address = venue['location']['formattedAddress']
-        except KeyError:
+        except (KeyError):
             pass
         info['address'] = '\n'.join(address)
         try:
@@ -297,7 +305,8 @@ def get_venues(query, location, offset=0):
 
 
 def valid_image(image):
-    '''Checks if image exists and has an allowed extension'''
+    '''Checks if image exists and has an allowed extension. Returns True
+    if no image exists.'''
     if not image:
         return True
     else:
@@ -306,20 +315,25 @@ def valid_image(image):
 
 
 def validate_form():
-    '''If the form fields are valid, it will return a dictionary of user
-    input, else None'''
+    '''If the form fields are valid, it will return None. Otherwise it will
+    return a dictionary of the form values. This is to save the user from
+    having to re-input values in an incorrectly submitted form.'''
     image = request.files['image']
+    image_is_valid = valid_image(image)
+
     if (not request.form['category'] or not request.form['name']
-    or not valid_image(image)):
+    or not image_is_valid):
         if not request.form['category'] or not request.form['name']:
             flash('Category and Name fields are required.')
-        if not valid_image(image):
+        if not image_is_valid:
             flash('Unsupported file extension.')
         venue = {}
         info = ['category', 'name', 'address', 'phone', 'description']
         for index in info:
             if request.form[index]:
                 venue[index] = request.form[index]
+        if not venue:
+            return True # All fields are empty. Redirect to the form's URI.
         return venue
     else:
         return None
@@ -548,6 +562,8 @@ def show_catalog_json():
 @app.route('/', methods=['GET','POST'])
 def show_catalog():
     '''Renders main page'''
+    login_session['user_key'] = 1
+    login_session['user_name'] = 'Spencer'
     if request.method == 'POST':
         return redirect(url_for('search'), query=request.form['query'],
                location=request.form['location'])
@@ -622,7 +638,8 @@ def show_venues(category_key):
     categories = session.query(Category).order_by(asc(Category.name))
     venues = session.query(Venue).filter_by(category_key=category_key).order_by(
              asc(Venue.name))
-    return render_template('venues.html', categories=categories, venues=venues)
+    return render_template('venues.html', categories=categories, venues=venues,
+           category_key=category_key)
 
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/json')
@@ -644,7 +661,7 @@ def show_info(category_key, venue_key):
 @app.before_request
 def csrf_protect():
     '''Checks that the CSRF token from the form matches the one in the Flask
-    session'''
+    session. The token is also removed from the session.'''
     if request.method == 'POST':
         token = login_session.pop('csrf_token', None)
         if token is None or token != request.form.get('csrf_token'):

@@ -2,28 +2,29 @@
 {% block title %} Hello {% endblock %}
 {% block content %}
 
-  {% for category in categories %}
-    <p>
-      <a class='categories' href="{{url_for('show_venues',
-            category_key=category.key)}}">
-        {{category.name}}
+  <div id='venues-categories' class='list-group'>
+    {% for category in categories %}
+      {% if category.key == category_key %}
+        <a class='list-group-item list-group-item-action list-group-item-success active'
+           href="{{url_for('show_venues', category_key=category.key)}}">
+          <strong>{{category.name}}</strong>
+        </a>
+      {% else %}
+        <a class='list-group-item list-group-item-action list-group-item-success'
+           href="{{url_for('show_venues', category_key=category.key)}}">
+          <strong>{{category.name}}</strong>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div id='venues-list' class='list-group'>
+    {% for venue in venues %}
+      <a class='list-group-item list-group-item-action list-group-item-info'
+         href="{{url_for('show_info', category_key=venue.category_key, venue_key=venue.key)}}">
+        <strong>{{venue.name}}</strong>
       </a>
-    </p>
-  {% endfor %}
-
-  <br><br><br><br><br>
-
-  {% for venue in venues %}
-    <p>
-      <a class='venues' href="{{url_for('show_info',
-            category_key=venue.category_key, venue_key=venue.key)}}">
-        {{venue.name}}
-      </a>
-    </p>
-  {% endfor %}
-
-  <br><br><br><br><br><br>
-
-  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
+    {% endfor %}
+  </div>
 
 {% endblock %}

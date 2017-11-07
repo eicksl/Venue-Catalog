@@ -3,12 +3,13 @@
 {% block title %} New Venue {% endblock %}
 {% block content %}
 
+{#
   <form action='' method='POST' enctype='multipart/form-data'>
-    <p>image</p>
+    <p>Image</p>
     <input type='file' name='image'>
     {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
     {% for index in info %}
-      <p> {{index}} </p>
+      <p> {{index|capitalize}} </p>
       <input type='text' size='30' name='{{index}}'
         {% block value scoped %}
           {% if venue|default(false) and venue[index] %}
@@ -19,6 +20,60 @@
     <input type='submit' value='Submit'>
     <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
   </form>
+#}
+
+
+  <form action='' method='POST' enctype='multipart/form-data'>
+
+    <div class='form-group'>
+      <input hidden type='file' name='image' class='file'>
+      <div class='input-group col-xs-12'>
+        <input type='text' class='form-control input-lg' disabled placeholder='Upload Image'>
+        <span class='input-group-btn'>
+          <button class='browse btn btn-primary input-lg' type='button'>Browse</button>
+        </span>
+      </div>
+    </div>
+
+{#
+    <p>Image</p>
+    <label class='custom-file'>
+      <input type='file' name='image' id='file2' class='custom-file-input'
+             onchange="$('#upload-file-info').html(this.files[0].name)">
+      <span class='custom-file-control'></span>
+    </label>
+    <span class='label label-info' id="upload-file-info"></span>
+#}
+
+
+    {% set info = ['category', 'name', 'address', 'phone', 'description'] %}
+    {% for index in info %}
+      <p> {{index|capitalize}} </p>
+      <input type='text' size='30' name='{{index}}'
+        {% block value scoped %}
+          {% if venue|default(false) and venue[index] %}
+              value='{{venue[index]}}'
+          {% endif %}
+        {% endblock %}>
+    {% endfor %}
+    <input type='submit' value='Submit'>
+    <input name='csrf_token' type='hidden' value='{{get_csrf_token()}}'>
+  </form>
+
+  <script>
+    // Credit to Christophor Wilson for the following script that changes
+    // the text inside the image uplaod form field to match the file name
+    // https://codepen.io/CSWApps/pen/GKtvH
+    $(document).on('click', '.browse', function() {
+      var file = $(this).parent().parent().parent().find('.file');
+      file.trigger('click');
+    });
+    $(document).on('change', '.file', function() {
+      $(this).parent().find('.form-control').val($(this).val().replace(/C:\\fakepath\\/i, ''));
+    });
+  </script>
+
+
 
 {#
   <p>Image</p>
@@ -32,9 +87,5 @@
   <br><br><br>
 
 {{display_flash()}}
-
-  <br><br><br><br><br><br>
-
-  <a href="{{url_for('show_catalog')}}"> Back to Main </a>
 
 {% endblock %}
