@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, inspect, asc, desc
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 from datetime import datetime
+from functools import wraps
 from models import Base, User, Category, Venue, Activity
 from exceptions import UserKeyNotFound
 import json
@@ -32,6 +33,16 @@ engine = create_engine('sqlite:///venue.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
+
+def login_required(login):
+    @wraps(login)
+    def check_login_status(*args, **kwargs):
+        if 'user_key' in login_session:
+            return login(*args, **kwargs)
+        else:
+            return redirect('/login')
+    return check_login_status
 
 
 def get_random_string():
@@ -286,9 +297,9 @@ def get_venues(query, location, offset=0):
             pass
         try:
             address = venue['location']['formattedAddress']
+            info['address'] = '\n'.join(address)
         except (KeyError):
             pass
-        info['address'] = '\n'.join(address)
         try:
             info['description'] = (data['response']['groups'][0]
                                    ['items'][index]['tips'][0]['text'])
@@ -396,11 +407,9 @@ def show_login():
 
 
 @app.route('/add', methods=['POST'])
+@login_required
 def add_venue():
     '''Adds a new venue from the search results to the database'''
-    if 'user_key' not in login_session:
-        return make_response('User not logged in', 401)
-
     venue = json.loads(request.form['venue'])
 
     q = session.query(Category.name).filter_by(name=venue['category']).scalar()
@@ -423,11 +432,9 @@ def add_venue():
 
 
 @app.route('/new', methods=['GET', 'POST'])
+@login_required
 def add_custom_venue():
     '''Adds a new user-defined venue to the database'''
-    if 'user_key' not in login_session:
-        return make_response('User not logged in', 401)
-
     if request.method == 'GET':
         return render_template('new.html')
 
@@ -463,8 +470,7 @@ def add_custom_venue():
 def authorized(venue_user_key):
     '''Returns True if the user key in the flask session matches the venue's
     user key, else returns False'''
-    if ('user_key' in login_session
-            and login_session['user_key'] == venue_user_key):
+    if login_session['user_key'] == venue_user_key:
         return True
     else:
         return False
@@ -472,6 +478,7 @@ def authorized(venue_user_key):
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/edit',
            methods=['GET', 'POST'])
+@login_required
 def edit_venue(category_key, venue_key):
     '''Edits an existing venue in the database based on user input'''
     venue = session.query(Venue).filter_by(key=venue_key).one()
@@ -523,6 +530,7 @@ def edit_venue(category_key, venue_key):
 
 @app.route('/category/<int:category_key>/venue/<int:venue_key>/delete',
            methods=['GET', 'POST'])
+@login_required
 def delete_venue(category_key, venue_key):
     '''Deletes a venue from the database'''
     venue = session.query(Venue).filter_by(key=venue_key).one()

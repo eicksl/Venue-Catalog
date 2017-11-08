@@ -3,14 +3,14 @@
 
 {% if not venue|default(false) %}
 
-{% block value %}
+  {% block value %}
 
-  {% if index == 'category' %}
-    value='{{category_name}}'
-  {% else %}
-    value='{{venue[index]}}'
-  {% endif %}
+    {% if index == 'category' %}
+      value='{{category_name}}'
+    {% else %}
+      value='{{venue[index]}}'
+    {% endif %}
 
-{% endblock %}
+  {% endblock %}
 
 {% endif %}
