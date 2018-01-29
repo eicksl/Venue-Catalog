@@ -470,7 +470,7 @@ def add_custom_venue():
 def authorized(venue_user_key):
     '''Returns True if the user key in the flask session matches the venue's
     user key, else returns False'''
-    if login_session['user_key'] == venue_user_key:
+    if 'user_key' in login_session and login_session['user_key'] == venue_user_key:
         return True
     else:
         return False
