@@ -460,10 +460,12 @@ def add_custom_venue():
     session.add(new_venue)
     session.commit()
 
-    new_venue.image = handle_image_upload(
-        request.files['image'], new_venue.key)
-    session.add(new_venue)
-    session.commit()
+    if 'image' in request.files:
+        new_venue.image = handle_image_upload(
+            request.files['image'], new_venue.key)
+        session.add(new_venue)
+        session.commit()
+
     new_activity(new_venue, 'added')
 
     flash('New venue {} added in category {}'.format(new_venue.name, category))
