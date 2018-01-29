@@ -333,7 +333,7 @@ def validate_form():
     '''If the form fields are valid, it will return None. Otherwise it will
     return a dictionary of the form values. This is to save the user from
     having to re-input values in an incorrectly submitted form.'''
-    image = request.files['image']
+    image = request.files.get('image', None)
     image_is_valid = valid_image(image)
 
     if (not request.form['category'] or not request.form['name']
@@ -574,12 +574,11 @@ def show_catalog_json():
     return jsonify([i.serialize for i in categories])
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def show_catalog():
     '''Renders main page'''
-    if request.method == 'POST':
-        return redirect(url_for('search'), query=request.form['query'],
-                        location=request.form['location'])
+
+    login_session['user_key'] = 1
 
     categories = session.query(Category).order_by(asc(Category.name))
     activity = session.query(Activity).order_by(desc(Activity.key))
