@@ -517,7 +517,7 @@ def edit_venue(category_key, venue_key):
         session.add(new_category_obj)
         venue.category_key = new_category_obj.key
 
-    if request.files['image']:
+    if 'image' in request.files:
         if venue.image and venue.image[:8] != 'https://':
             os.remove('static/' + venue.image)
         venue.image = handle_image_upload(request.files['image'], venue.key)
