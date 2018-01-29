@@ -63,7 +63,7 @@
       {% for action in activity %}
         <p>
           {{action.user_name~' '~action.action~' '}}
-          {% if action.category_key and action.venue_key %}
+          {% if action.venue_key %}
             <a href="{{url_for('show_info', category_key=action.category_key,
                     venue_key=action.venue_key)}}">{{action.venue_name}}</a>
           {% else %}

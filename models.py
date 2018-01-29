@@ -84,5 +84,5 @@ class Activity(Base):
         }
 
 
-engine = create_engine('sqlite:///venue.db')
+engine = create_engine('postgresql://cataloguser:password@localhost/catalogdb')
 Base.metadata.create_all(engine)

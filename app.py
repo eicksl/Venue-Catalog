@@ -18,7 +18,7 @@ import httplib2
 
 G_OAUTH_ID = ('441640703458-8gb39d0jqjk9s0khrhdfhj8kutnnekpg.apps'
               '.googleusercontent.com')
-UPLOAD_DIR = 'static/img/uploads/'
+UPLOAD_DIR = '/var/www/Venue-Catalog/static/img/uploads/'
 ALLOWED_EXT = set(['png', 'jpg', 'jpeg', 'gif', 'apng', 'bmp', 'svg'])
 CLIENT_ID = 'X51LXWV4BDKANESBY1PCWEG2XDDG4FW0PTWFWOGXX0YTO5EL'
 CLIENT_SECRET = 'Q4EWJUPCQM114AESG5VKYLVLGRVZLDFW1OA3KPERTMIP2R02'
@@ -29,7 +29,7 @@ LIMIT = 11   # LIMIT-1 results are shown on the search page. An extra item
 
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
-engine = create_engine('sqlite:///venue.db')
+engine = create_engine('postgresql://cataloguser:password@localhost/catalogdb')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
@@ -57,9 +57,9 @@ def fbconnect():
     '''Exchanges short term token for long term one, then logs in the user'''
     short_term_token = request.form['token']
     app_id = json.loads(open(
-        'fb_client_secrets.json', 'r').read())['web']['app_id']
+        '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_id']
     app_secret = json.loads(open(
-        'fb_client_secrets.json', 'r').read())['web']['app_secret']
+        '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_secret']
     auth_url = ('https://graph.facebook.com/oauth/access_token?grant_type='
                 'fb_exchange_token&client_id={}&client_secret={}'
                 '&fb_exchange_token={}').format(app_id, app_secret,
@@ -120,7 +120,7 @@ def gconnect():
     access token, then logs in the user'''
     try:
         auth_code = request.form['code']
-        flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
+        flow = flow_from_clientsecrets('/var/www/Venue-Catalog/g_client_secrets.json', scope='')
         flow.redirect_uri = 'postmessage'
         credentials = flow.step2_exchange(auth_code)
     except FlowExchangeError:
@@ -333,7 +333,7 @@ def validate_form():
     '''If the form fields are valid, it will return None. Otherwise it will
     return a dictionary of the form values. This is to save the user from
     having to re-input values in an incorrectly submitted form.'''
-    image = request.files['image']
+    image = request.files.get('image', None)
     image_is_valid = valid_image(image)
 
     if (not request.form['category'] or not request.form['name']
@@ -363,7 +363,8 @@ def handle_image_upload(image, venue_key):
     ext = image.filename.rsplit('.', 1)[1].lower()
     filename = str(venue_key) + '.' + ext
     path_from_main = UPLOAD_DIR + filename
-    path_from_static = UPLOAD_DIR.replace('static/', '', 1) + filename
+    #path_from_static = UPLOAD_DIR.replace('static/', '', 1) + filename
+    path_from_static = 'img/uploads/' + filename
     image.save(path_from_main)
     image.close()
 
@@ -395,6 +396,10 @@ def new_activity(venue, action):
     if action != 'deleted':
         activity.category_key = venue.category_key
         activity.venue_key = venue.key
+    else:
+        last = session.query(Activity).filter_by(venue_key=venue.key).first()
+        if last:
+            last.venue_key = None
 
     session.add(activity)
     session.commit()
@@ -456,10 +461,12 @@ def add_custom_venue():
     session.add(new_venue)
     session.commit()
 
-    new_venue.image = handle_image_upload(
-        request.files['image'], new_venue.key)
-    session.add(new_venue)
-    session.commit()
+    if 'image' in request.files:
+        new_venue.image = handle_image_upload(
+            request.files['image'], new_venue.key)
+        session.add(new_venue)
+        session.commit()
+
     new_activity(new_venue, 'added')
 
     flash('New venue {} added in category {}'.format(new_venue.name, category))
@@ -470,7 +477,7 @@ def add_custom_venue():
 def authorized(venue_user_key):
     '''Returns True if the user key in the flask session matches the venue's
     user key, else returns False'''
-    if login_session['user_key'] == venue_user_key:
+    if 'user_key' in login_session and login_session['user_key'] == venue_user_key:
         return True
     else:
         return False
@@ -511,7 +518,7 @@ def edit_venue(category_key, venue_key):
         session.add(new_category_obj)
         venue.category_key = new_category_obj.key
 
-    if request.files['image']:
+    if 'image' in request.files:
         if venue.image and venue.image[:8] != 'https://':
             os.remove('static/' + venue.image)
         venue.image = handle_image_upload(request.files['image'], venue.key)
@@ -574,13 +581,9 @@ def show_catalog_json():
     return jsonify([i.serialize for i in categories])
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def show_catalog():
     '''Renders main page'''
-    if request.method == 'POST':
-        return redirect(url_for('search'), query=request.form['query'],
-                        location=request.form['location'])
-
     categories = session.query(Category).order_by(asc(Category.name))
     activity = session.query(Activity).order_by(desc(Activity.key))
     if activity.count() == 0:
@@ -695,6 +698,9 @@ def get_csrf_token():
         login_session['csrf_token'] = get_random_string()
     return login_session['csrf_token']
 
+
+app.jinja_env.globals['get_csrf_token'] = get_csrf_token
+app.secret_key = get_random_string()
 
 if __name__ == '__main__':
     app.jinja_env.globals['get_csrf_token'] = get_csrf_token
