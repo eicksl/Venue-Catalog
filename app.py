@@ -395,6 +395,10 @@ def new_activity(venue, action):
     if action != 'deleted':
         activity.category_key = venue.category_key
         activity.venue_key = venue.key
+    else:
+        last = session.query(Activity).filter_by(venue_key=venue.key).first()
+        if last:
+            last.venue_key = None
 
     session.add(activity)
     session.commit()
