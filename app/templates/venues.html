@@ -1,0 +1,30 @@
+{% extends 'main.html' %}
+{% block title %} Hello {% endblock %}
+{% block content %}
+
+  <div id='venues-categories' class='list-group'>
+    {% for category in categories %}
+      {% if category.key == category_key %}
+        <a class='list-group-item list-group-item-action list-group-item-success active'
+           href="{{url_for('show_venues', category_key=category.key)}}">
+          <strong>{{category.name}}</strong>
+        </a>
+      {% else %}
+        <a class='list-group-item list-group-item-action list-group-item-success'
+           href="{{url_for('show_venues', category_key=category.key)}}">
+          <strong>{{category.name}}</strong>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div id='venues-list' class='list-group'>
+    {% for venue in venues %}
+      <a class='list-group-item list-group-item-action list-group-item-info'
+         href="{{url_for('show_info', category_key=venue.category_key, venue_key=venue.key)}}">
+        <strong>{{venue.name}}</strong>
+      </a>
+    {% endfor %}
+  </div>
+
+{% endblock %}
