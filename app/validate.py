@@ -48,8 +48,8 @@ def handle_image_upload(image, venue_key):
     ext = image.filename.rsplit('.', 1)[1].lower()
     filename = str(venue_key) + '.' + ext
     path_from_main = app.config['UPLOAD_DIR'] + filename
-    #path_from_static = 'img/uploads/' + filename
-    path_from_static = app.config['UPLOAD_DIR'].replace('app/static/', '', 1) + filename
+    path_from_static = 'img/uploads/' + filename
+    #path_from_static = app.config['UPLOAD_DIR'].replace('app/static/', '', 1) + filename
     image.save(path_from_main)
     image.close()
 

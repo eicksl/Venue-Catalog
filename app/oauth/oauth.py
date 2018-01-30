@@ -44,14 +44,14 @@ def authorized(venue_user_key):
 def fbconnect():
     '''Exchanges short term token for long term one, then logs in the user'''
     short_term_token = request.form['token']
-    app_id = json.loads(open(
-        'fb_client_secrets.json', 'r').read())['web']['app_id']
-    app_secret = json.loads(open(
-        'fb_client_secrets.json', 'r').read())['web']['app_secret']
     #app_id = json.loads(open(
-    #    '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_id']
+    #    'fb_client_secrets.json', 'r').read())['web']['app_id']
     #app_secret = json.loads(open(
-    #    '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_secret']
+    #    'fb_client_secrets.json', 'r').read())['web']['app_secret']
+    app_id = json.loads(open(
+        '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_id']
+    app_secret = json.loads(open(
+        '/var/www/Venue-Catalog/fb_client_secrets.json', 'r').read())['web']['app_secret']
     auth_url = ('https://graph.facebook.com/oauth/access_token?grant_type='
                 'fb_exchange_token&client_id={}&client_secret={}'
                 '&fb_exchange_token={}').format(app_id, app_secret,
@@ -112,8 +112,8 @@ def gconnect():
     access token, then logs in the user'''
     try:
         auth_code = request.form['code']
-        #flow = flow_from_clientsecrets('/var/www/Venue-Catalog/g_client_secrets.json', scope='')
-        flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
+        flow = flow_from_clientsecrets('/var/www/Venue-Catalog/g_client_secrets.json', scope='')
+        #flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
         flow.redirect_uri = 'postmessage'
         credentials = flow.step2_exchange(auth_code)
     except FlowExchangeError:
