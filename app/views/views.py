@@ -162,7 +162,7 @@ def edit_venue(category_key, venue_key):
 
     if 'image' in request.files:
         if venue.image and venue.image[:8] != 'https://':
-            os.remove('static/' + venue.image)
+            os.remove(app.config['UPLOAD_DIR'] + venue.image.replace('img/uploads/', '', 1))
         venue.image = handle_image_upload(request.files['image'], venue.key)
 
     venue.name = new_name_str
@@ -197,7 +197,7 @@ def delete_venue(category_key, venue_key):
         session.delete(old_category_obj)
 
     if venue.image and venue.image[:8] != 'https://':
-        os.remove('static/' + venue.image)
+        os.remove(app.config['UPLOAD_DIR'] + venue.image.replace('img/uploads/', '', 1))
 
     session.delete(venue)
     session.commit()
