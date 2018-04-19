@@ -24,10 +24,10 @@
 }
 .search-nav {
   margin-top: 20px;
-  margin-bottom: 40px;
 }
 #search-next {
   float: right;
+  margin-bottom: 40px;
 }
 .btn {
   cursor: pointer;
