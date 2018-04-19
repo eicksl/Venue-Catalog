@@ -1,3 +1,6 @@
+body {
+  background: url('/static/img/topography.png');
+}
 #login-buttons {
   padding-top: 140px;
   transform: translateX(25%);
